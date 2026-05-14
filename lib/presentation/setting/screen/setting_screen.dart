@@ -22,7 +22,7 @@ class _SettingScreenState extends State<SettingScreen> {
       appBar: AppBar(
         leading: IconButton(
           onPressed: () => context.pop(),
-          icon: Icon(Icons.arrow_back_ios, color: AppColors.primaryText,),
+          icon: Icon(Icons.arrow_back_ios, color: AppColors.primaryText),
         ),
         backgroundColor: Colors.transparent,
       ),
@@ -42,7 +42,7 @@ class _SettingScreenState extends State<SettingScreen> {
           children: [
             const SizedBox(height: 50),
             _buildHeader(context, user),
-            _buildMenu(),
+            _buildMenu(context),
           ],
         ),
       ),
@@ -55,13 +55,19 @@ class _SettingScreenState extends State<SettingScreen> {
         Stack(
           children: [
             GestureDetector(
-              onTap: () => context.go('/profile'),
+              onTap: () => context.push('/profile'),
               child: CircleAvatar(
                 radius: 50,
                 backgroundColor: AppColors.avatarColor,
                 backgroundImage:
                 user?.image != null ? NetworkImage(user!.image!) : null,
-                child: user?.image == null ? Icon(Icons.person_outline_sharp, size: 60, color: Colors.white24,) : null,
+                child: user?.image == null
+                    ? Icon(
+                  Icons.person_outline_sharp,
+                  size: 60,
+                  color: Colors.white24,
+                )
+                    : null,
               ),
             ),
             Positioned(
@@ -146,29 +152,110 @@ class _SettingScreenState extends State<SettingScreen> {
     );
   }
 
-  Widget _buildMenu() {
+  Widget _buildMenu(BuildContext context) {
     return Expanded(
       child: ListView(
         children: [
-          _MenuItem(icon: Icons.error_outline, title: "Báo cáo lỗi"),
-          const SizedBox(height: 8,),
-          _MenuItem(icon: Icons.description_outlined, title: "Chính sách"),
-          const SizedBox(height: 8,),
-          _MenuItem(icon: Icons.cancel_outlined, title: "Hủy tài khoản"),
-          const SizedBox(height: 8,),
-          _MenuItem(icon: Icons.support_agent_outlined, title: "Hỗ trợ"),
-          const SizedBox(height: 8,),
-          _MenuItem(icon: Icons.exit_to_app_outlined, title: "Đăng xuất"),
+          _MenuItem(
+            icon: Icons.error_outline,
+            title: "Báo cáo lỗi",
+            onTap: () => context.push('/report-bug'),
+          ),
+          const SizedBox(height: 8),
+          _MenuItem(
+            icon: Icons.description_outlined,
+            title: "Chính sách",
+            onTap: () => context.push('/policy'),
+          ),
+          const SizedBox(height: 8),
+          _MenuItem(
+            icon: Icons.cancel_outlined,
+            title: "Hủy tài khoản",
+            onTap: () => context.push('/delete-account'),
+          ),
+          const SizedBox(height: 8),
+          _MenuItem(
+            icon: Icons.support_agent_outlined,
+            title: "Hỗ trợ",
+            onTap: () => context.push('/support'),
+          ),
+          const SizedBox(height: 8),
+          _MenuItem(
+            icon: Icons.exit_to_app_outlined,
+            title: "Đăng xuất",
+            onTap: () => _showSignOutDialog(context),
+          ),
         ],
       ),
     );
+  }
+
+  Future<void> _showSignOutDialog(BuildContext context) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        content: Text(
+          'Bạn chắc chắn muốn đăng xuất không?',
+          style: TextStyle(
+            fontFamily: 'Roboto',
+            fontWeight: FontWeight.w700,
+            fontSize: 12,
+          ),
+          textAlign: TextAlign.center,
+        ),
+        actions: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceAround,
+            children: [
+              TextButton(
+                onPressed: () => ctx.pop(false),
+                child: Text(
+                  'Hủy',
+                  style: TextStyle(
+                    fontFamily: 'Roboto',
+                    color: AppColors.lockText,
+                    fontWeight: FontWeight.w500,
+                    fontSize: 12,
+                  ),
+                ),
+              ),
+              TextButton(
+                onPressed: () => ctx.pop(true),
+                child: Text(
+                  'Xác nhận',
+                  style: TextStyle(
+                    fontFamily: 'Roboto',
+                    color: AppColors.buttonInsideLesson,
+                    fontWeight: FontWeight.w500,
+                    fontSize: 12,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+    if (confirmed == true && context.mounted) {
+      final auth = context.read<AuthRepository>();
+      await auth.signOut();
+      if (context.mounted) {
+        context.go('/login');
+      }
+    }
   }
 }
 
 class _MenuItem extends StatelessWidget {
   final IconData icon;
   final String title;
-  const _MenuItem({required this.icon, required this.title});
+  final VoidCallback? onTap;
+
+  const _MenuItem({
+    required this.icon,
+    required this.title,
+    this.onTap,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -186,7 +273,7 @@ class _MenuItem extends StatelessWidget {
             ),
           ),
           trailing: Icon(Icons.chevron_right, color: AppColors.primaryText),
-          onTap: () {},
+          onTap: onTap,
         ),
         Divider(
           color: Colors.white24,
@@ -194,7 +281,7 @@ class _MenuItem extends StatelessWidget {
           thickness: 1,
           indent: 16,
           endIndent: 16,
-        )
+        ),
       ],
     );
   }

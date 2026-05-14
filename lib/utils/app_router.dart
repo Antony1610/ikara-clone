@@ -12,6 +12,7 @@ import 'package:ikara_clone/presentation/performance_karaoke/screen/performance_
 import 'package:ikara_clone/presentation/performances/screen/performance_screen.dart';
 import 'package:ikara_clone/presentation/practices/screen/practices_screen.dart';
 import 'package:ikara_clone/presentation/profile/screen/profile_screen.dart';
+import 'package:ikara_clone/presentation/report_error/screen/report_error_screen.dart';
 import 'package:ikara_clone/presentation/rhythm_game/screen/rhythm_game_screen.dart';
 import 'package:ikara_clone/presentation/rhythm_training/screen/rhythm_training_screen.dart';
 import 'package:ikara_clone/presentation/rhythm_game_result/screen/rhythm_game_result_screen.dart';
@@ -174,10 +175,7 @@ class AppRouter {
           final lessonId = state.pathParameters['lessonId']!;
           final partId = state.pathParameters['partId']!;
           return CustomTransitionPage(
-            child: LessonDetailPageScreen(
-              partId: partId,
-              lessonId: lessonId,
-            ),
+            child: LessonDetailPageScreen(partId: partId, lessonId: lessonId),
             transitionsBuilder: AppTransitions.slideFromRight,
           );
         },
@@ -253,6 +251,14 @@ class AppRouter {
             ),
             child: ProfileScreen(),
           ),
+          transitionsBuilder: AppTransitions.slideFromRight,
+        ),
+      ),
+      GoRoute(
+        path: '/report-bug',
+        pageBuilder: (context, state) => CustomTransitionPage(
+          key: state.pageKey,
+          child: ReportErrorScreen(),
           transitionsBuilder: AppTransitions.slideFromRight,
         ),
       ),

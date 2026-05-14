@@ -14,6 +14,8 @@ class AppColors {
   static const Color partColor = Color(0xFF672FE4);
   static const Color avatarColor = Color(0xFF372191);
   static const Color whiteBackground = Color(0xFFFFFFFF);
+  static const Color firstPopupResult = Color(0xFF7130ED);
+  static const Color secPopupResult = Color(0xFF1C0183);
 
   ///Selection tab color
   static const Color selectionColor = Color(0xFF19A4FA);
@@ -25,13 +27,15 @@ class AppColors {
   static const Color karaokeText = Color(0xFF19A4FA);
   static const Color blackText = Colors.black;
   static const Color hintText = Color(0xFFB6B6B6);
+  static const Color firstScore = Color(0xFFFFEC63);
+  static const Color secScore = Color(0xFFE4A11A);
 
   ///Border Color
   static const Color lessBorderColor = Color(0xFF672FE4);
   static const Color processColor = Color(0xFF26FFFF);
   static const Color pracColor = Color(0xFF180E44);
   static const Color questIndexColor = Color(0xFF402E8A);
-
+  static const Color textBorderResult = Color(0xFFEBA550);
   ///Button Color
   static const Color buttonInsideLesson = Color(0xFF19A4FA);
   static const Color buttonLesson = Color(0xFF180E44);

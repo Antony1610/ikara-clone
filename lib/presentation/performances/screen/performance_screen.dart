@@ -56,7 +56,7 @@ class _PerformancesPageViewState extends State<_PerformancesPageView> {
         actions: [
           Padding(padding: EdgeInsets.only(right: 12),
           child: GestureDetector(
-            onTap: () => context.go('/setting'),
+            onTap: () => context.push('/setting'),
             child: CircleAvatar(
               radius: 18,
               backgroundColor: Colors.grey.shade300,

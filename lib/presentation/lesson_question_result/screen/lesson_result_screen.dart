@@ -8,8 +8,124 @@ class LessonResultScreen extends StatelessWidget {
   final LessonResult result;
   const LessonResultScreen({super.key, required this.result});
 
+  void _showScoreDialog(BuildContext context) {
+    final score = (result.correctCount / result.totalQuestion * 100).round();
+
+    final message = switch (score) {
+      100 =>
+        "Chúc mừng! Bạn đã đạt điểm tuyệt đối. Kiến thức của bạn thật sự rộng lớn.",
+      >= 80 => "Rất tốt! Bạn có kiến thức vững chắc.",
+      >= 60 => "Khá tốt! Ôn tập để cải thiện thêm.",
+      _ => "Bạn cần luyện tập thêm. Hãy tiếp tục cố gắng!",
+    };
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: Colors.transparent,
+        contentPadding: EdgeInsets.zero,
+        content: Container(
+          width: double.infinity,
+          height: 334,
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [AppColors.firstPopupResult, AppColors.secPopupResult],
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+            ),
+            borderRadius: BorderRadius.circular(20)
+          ),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                Stack(
+                  alignment: Alignment.center,
+                  children: [
+                    Text(
+                      '$score',
+                      style: TextStyle(
+                        fontFamily: 'Roboto',
+                        fontWeight: FontWeight.w700,
+                        fontSize: 80,
+                        foreground: Paint()
+                          ..style = PaintingStyle.stroke
+                          ..strokeWidth = 1.5
+                          ..color = AppColors.textBorderResult,
+                      ),
+                    ),
+                    ShaderMask(
+                      shaderCallback: (bounds) => LinearGradient(
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                        colors: [
+                          AppColors.firstScore,
+                          AppColors.secScore,
+                        ],
+                      ).createShader(bounds),
+                      child: Text(
+                        '$score',
+                        style: TextStyle(
+                          fontFamily: 'Roboto',
+                          fontWeight: FontWeight.w700,
+                          fontSize: 80,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  message,
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontFamily: 'Roboto',
+                    fontSize: 12,
+                    color: AppColors.hintText,
+                    fontWeight: FontWeight.w400,
+                  ),
+                  maxLines: 2,
+                ),
+                const SizedBox(height: 20),
+                GestureDetector(
+                  onTap: () => ctx.pop(),
+                  child: Container(
+                    width: 150,
+                    height: 44,
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(22),
+                      color: AppColors.buttonInsideLesson,
+                    ),
+                    child: Center(
+                      child: Text(
+                        'Xác nhận',
+                        style: TextStyle(
+                          fontFamily: 'Roboto',
+                          fontWeight: FontWeight.w600,
+                          fontSize: 14,
+                          color: AppColors.primaryText,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _showScoreDialog(context);
+    });
     return Scaffold(
       extendBodyBehindAppBar: true,
       appBar: AppBar(
