@@ -86,4 +86,17 @@ class AppTransitions {
       ),
     );
   }
+
+  static Widget fadeOutIn(
+      BuildContext context,
+      Animation<double> animation,
+      Animation<double> secondaryAnimation,
+      Widget child,
+      ) {
+    final curved = CurvedAnimation(parent: animation, curve: Curves.easeInOut);
+    return FadeTransition(
+      opacity: curved,
+      child: child,
+    );
+  }
 }

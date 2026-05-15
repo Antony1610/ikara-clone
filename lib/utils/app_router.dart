@@ -1,5 +1,6 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
+import 'package:ikara_clone/base/blocs/auth/auth_bloc.dart';
 
 import 'package:ikara_clone/presentation/breathing_lesson/screen/breathing_lesson_screen.dart';
 import 'package:ikara_clone/presentation/breathing_lesson_result/screen/breathing_lesson_result_screen.dart';
@@ -20,6 +21,7 @@ import 'package:ikara_clone/constants/constants.dart';
 
 import '../data/model/model.dart';
 
+import '../data/model/user/app_user.dart';
 import '../data/repositories/auth_repository.dart';
 import '../data/repositories/user_repository.dart';
 import '../presentation/breathing_lesson_detail/screen/breathing_lesson_detail_screen.dart';
@@ -32,14 +34,15 @@ import '../presentation/setting/screen/setting_screen.dart';
 
 class AppRouter {
   static final GoRouter router = GoRouter(
-    initialLocation: '/lesson',
+    initialLocation: '/login',
     routes: [
       GoRoute(
         path: '/login',
         pageBuilder: (context, state) => CustomTransitionPage(
           key: state.pageKey,
           child: const LoginScreen(),
-          transitionsBuilder: AppTransitions.slideFromRight,
+          transitionsBuilder: AppTransitions.fadeOutIn,
+          transitionDuration: Duration(milliseconds: 600),
         ),
       ),
       GoRoute(
@@ -79,7 +82,8 @@ class AppRouter {
         pageBuilder: (context, state, navigationShell) => CustomTransitionPage(
           key: state.pageKey,
           child: HomeScreen(navigationShell: navigationShell),
-          transitionsBuilder: AppTransitions.fade,
+          transitionsBuilder: AppTransitions.fadeOutIn,
+          transitionDuration: Duration(milliseconds: 600)
         ),
         branches: [
           StatefulShellBranch(
@@ -242,17 +246,21 @@ class AppRouter {
       ),
       GoRoute(
         path: '/profile',
-        pageBuilder: (context, state) => CustomTransitionPage(
-          key: state.pageKey,
-          child: BlocProvider(
-            create: (ctx) => ProfileBloc(
-              ctx.read<AuthRepository>(),
-              ctx.read<UserRepository>(),
+        pageBuilder: (context, state) {
+          final user = state.extra as AppUser?;
+          return CustomTransitionPage(
+            key: state.pageKey,
+            child: BlocProvider(
+              create: (ctx) => ProfileBloc(
+                ctx.read<AuthRepository>(),
+                ctx.read<UserRepository>(),
+                ctx.read<AuthBloc>()
+              ),
+              child: ProfileScreen(user: user!),
             ),
-            child: ProfileScreen(),
-          ),
-          transitionsBuilder: AppTransitions.slideFromRight,
-        ),
+            transitionsBuilder: AppTransitions.slideFromRight,
+          );
+        },
       ),
       GoRoute(
         path: '/report-bug',

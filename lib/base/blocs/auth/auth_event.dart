@@ -12,3 +12,8 @@ class _AuthUserChanged extends AuthEvent {
   final AppUser? user;
   _AuthUserChanged(this.user);
 }
+
+class AuthUserUpdate extends AuthEvent {
+  final AppUser user;
+  AuthUserUpdate(this.user);
+}

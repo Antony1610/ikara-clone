@@ -2,9 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
+import 'package:ikara_clone/base/blocs/auth/auth_bloc.dart';
 import 'package:ikara_clone/constants/constants.dart';
 import 'package:ikara_clone/data/model/user/app_user.dart';
-import 'package:ikara_clone/data/repositories/auth_repository.dart';
 
 class SettingScreen extends StatefulWidget {
   const SettingScreen({super.key});
@@ -16,7 +16,6 @@ class SettingScreen extends StatefulWidget {
 class _SettingScreenState extends State<SettingScreen> {
   @override
   Widget build(BuildContext context) {
-    final user = context.read<AuthRepository>().currentUser;
     return Scaffold(
       extendBodyBehindAppBar: true,
       appBar: AppBar(
@@ -41,7 +40,16 @@ class _SettingScreenState extends State<SettingScreen> {
         child: Column(
           children: [
             const SizedBox(height: 50),
-            _buildHeader(context, user),
+            BlocBuilder<AuthBloc, AuthState>(
+              builder: (context, state) {
+                AppUser? user;
+                if (state is AuthAuthenticated) {
+                  user = state.user;
+                }
+                return _buildHeader(context, user);
+              },
+            ),
+
             _buildMenu(context),
           ],
         ),
@@ -52,45 +60,46 @@ class _SettingScreenState extends State<SettingScreen> {
   Widget _buildHeader(BuildContext context, AppUser? user) {
     return Column(
       children: [
-        Stack(
-          children: [
-            GestureDetector(
-              onTap: () => context.push('/profile'),
-              child: CircleAvatar(
+        GestureDetector(
+          onTap: () => context.push('/profile', extra: user),
+          child: Stack(
+            children: [
+              CircleAvatar(
                 radius: 50,
                 backgroundColor: AppColors.avatarColor,
-                backgroundImage:
-                user?.image != null ? NetworkImage(user!.image!) : null,
+                backgroundImage: user?.image != null
+                    ? NetworkImage(user!.image!)
+                    : null,
                 child: user?.image == null
                     ? Icon(
-                  Icons.person_outline_sharp,
-                  size: 60,
-                  color: Colors.white24,
-                )
+                        Icons.person_outline_sharp,
+                        size: 60,
+                        color: Colors.white24,
+                      )
                     : null,
               ),
-            ),
-            Positioned(
-              bottom: 0,
-              right: 0,
-              child: Container(
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: Colors.white,
-                ),
-                padding: EdgeInsets.all(6),
-                child: SvgPicture.asset(
-                  'assets/icons/edit.svg',
-                  width: 14,
-                  height: 17,
+              Positioned(
+                bottom: 0,
+                right: 0,
+                child: Container(
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: Colors.white,
+                  ),
+                  padding: EdgeInsets.all(6),
+                  child: SvgPicture.asset(
+                    'assets/icons/edit.svg',
+                    width: 14,
+                    height: 17,
+                  ),
                 ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
         const SizedBox(height: 12),
         Text(
-          user?.name ?? "User Name",
+          user?.name ?? "",
           style: TextStyle(
             fontFamily: 'Roboto',
             color: AppColors.primaryText,
@@ -237,11 +246,8 @@ class _SettingScreenState extends State<SettingScreen> {
       ),
     );
     if (confirmed == true && context.mounted) {
-      final auth = context.read<AuthRepository>();
-      await auth.signOut();
-      if (context.mounted) {
-        context.go('/login');
-      }
+      context.read<AuthBloc>().add(LogoutRequested());
+      context.go('/login');
     }
   }
 }
@@ -251,11 +257,7 @@ class _MenuItem extends StatelessWidget {
   final String title;
   final VoidCallback? onTap;
 
-  const _MenuItem({
-    required this.icon,
-    required this.title,
-    this.onTap,
-  });
+  const _MenuItem({required this.icon, required this.title, this.onTap});
 
   @override
   Widget build(BuildContext context) {

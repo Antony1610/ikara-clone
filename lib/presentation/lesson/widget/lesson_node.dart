@@ -20,10 +20,8 @@ class LessonNode extends StatelessWidget {
 
     if (isCurrent) {
       size = 226;
-    } else if (isPrev || isNext) {
-      size = 172;
     } else {
-      size = 100;
+      size = 172;
     }
 
     double opacity = isCurrent ? 1.0 : 0.6;

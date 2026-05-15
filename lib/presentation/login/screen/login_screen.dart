@@ -99,7 +99,7 @@ class _SubtitleText extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return const Text(
-      'Đăng nhập để trải nghiệm các chức năng\nhoàn chỉnh',
+      'Đăng nhập để trải nghiệm các chức năng hoàn chỉnh',
       textAlign: TextAlign.center,
       style: TextStyle(
         fontFamily: 'Roboto',

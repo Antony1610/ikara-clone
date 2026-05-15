@@ -32,6 +32,8 @@ import 'package:ikara_clone/firebase_options.dart';
 import 'package:ikara_clone/presentation/home/bloc/bottom_navigator_bloc.dart';
 import 'package:ikara_clone/utils/app_router.dart';
 
+import 'base/blocs/auth/auth_bloc.dart';
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
@@ -103,8 +105,17 @@ class MyApp extends StatelessWidget {
           ),
         ),
       ],
-      child: BlocProvider(
-        create: (_) => BottomNavigatorBloc(),
+      child: MultiBlocProvider(
+        providers: [
+          BlocProvider(
+            create: (_) => BottomNavigatorBloc(),
+          ),
+          BlocProvider(
+            create: (context) => AuthBloc(
+              context.read<AuthRepository>(),
+            )..add(AppStarted()),
+          ),
+        ],
         child: MaterialApp.router(
           debugShowCheckedModeBanner: false,
           title: 'Ikara',

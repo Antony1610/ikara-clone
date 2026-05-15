@@ -39,7 +39,7 @@ class _RhythmResultView extends StatelessWidget {
         appBar: AnimatedAppBar(
           appBar: AppBar(
             leading: IconButton(
-              onPressed: () => context.pop(),
+              onPressed: () => context.go('/rhythm'),
               icon: const Icon(Icons.arrow_back_ios),
             ),
             title: Text(

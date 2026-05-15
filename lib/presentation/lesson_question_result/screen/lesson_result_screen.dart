@@ -129,6 +129,7 @@ class LessonResultScreen extends StatelessWidget {
     return Scaffold(
       extendBodyBehindAppBar: true,
       appBar: AppBar(
+        automaticallyImplyLeading: false,
         title: Text(
           result.lessonTitle,
           style: TextStyle(
@@ -137,6 +138,7 @@ class LessonResultScreen extends StatelessWidget {
             fontWeight: FontWeight.w700,
             color: AppColors.primaryText,
           ),
+          textAlign: TextAlign.center,
           maxLines: 2,
         ),
         centerTitle: true,
@@ -171,7 +173,7 @@ class LessonResultScreen extends StatelessWidget {
               ),
             ),
             Padding(
-              padding: const EdgeInsets.all(16),
+              padding: EdgeInsets.only(top: 16,left: 16, right: 16, bottom: 16 + MediaQuery.of(context).padding.bottom),
               child: GestureDetector(
                 onTap: () => context.pop(),
                 child: Container(

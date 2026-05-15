@@ -79,30 +79,11 @@ class _LessonListState extends State<_LessonList> {
   @override
   void initState() {
     super.initState();
-    _scrollController.addListener(_onScroll);
-  }
-
-  void _onScroll() {
-    final bloc = context.read<LessonBloc>();
-    final state = bloc.state;
-
-    if (state is! PartsLoaded) return;
-
-    final allLessons = state.parts.expand((p) => p.lessons).toList();
-    int newIndex = (_scrollController.offset / _itemHeight).round();
-    final maxIndex = allLessons.length - 1;
-
-    if (newIndex < 0) newIndex = 0;
-    if (newIndex > maxIndex) newIndex = maxIndex;
-
-    if (state.currentIndex != newIndex) {
-      bloc.add(LessonPageIndexChanged(newIndex));
-    }
+    // ✅ No scroll listener — zoom is tap-only
   }
 
   @override
   void dispose() {
-    _scrollController.removeListener(_onScroll);
     _scrollController.dispose();
     super.dispose();
   }
@@ -157,10 +138,9 @@ class _LessonListState extends State<_LessonList> {
       }
     }
 
-    final allLessons = lessonRows.map((row) => row.lesson).toList();
     final currentIndex = state.currentIndex;
 
-    if (allLessons.isEmpty) {
+    if (lessonRows.isEmpty) {
       return const Center(
         child: Text(
           'Chưa có bài học',
@@ -178,8 +158,6 @@ class _LessonListState extends State<_LessonList> {
         final row = lessonRows[index];
         final lesson = row.lesson;
         final isCurrent = index == currentIndex;
-        final isPrev = index == currentIndex - 1;
-        final isNext = index == currentIndex + 1;
         final isLastInPart = row.isLastOfPart;
 
         return Column(
@@ -219,6 +197,8 @@ class _LessonListState extends State<_LessonList> {
                 if (_isTapInProgress) return;
                 _isTapInProgress = true;
 
+                context.read<LessonBloc>().add(LessonPageIndexChanged(index));
+
                 final partId = row.partId;
                 final lessonId = lesson.id;
                 debugPrint(
@@ -235,7 +215,6 @@ class _LessonListState extends State<_LessonList> {
                   if (!context.mounted) return;
                   _isTapInProgress = false;
                   await context.push('/lessonDetail/$partId/$lessonId');
-
                 } catch (_) {
                 } finally {
                   if (mounted) {
@@ -245,8 +224,8 @@ class _LessonListState extends State<_LessonList> {
               },
               child: LessonNode(
                 isCurrent: isCurrent,
-                isPrev: isPrev,
-                isNext: isNext,
+                isPrev: false,
+                isNext: false,
                 child: Container(
                   width: double.infinity,
                   height: double.infinity,
@@ -284,7 +263,7 @@ class _LessonListState extends State<_LessonList> {
               duration: const Duration(milliseconds: 250),
               opacity: isCurrent ? 1.0 : 0.5,
               child: SizedBox(
-                width: isCurrent ? 226 : (isPrev || isNext ? 172 : 100),
+                width: isCurrent ? 226 : 172 ,
                 child: Text(
                   lesson.lessonTitle.isNotEmpty
                       ? lesson.lessonTitle

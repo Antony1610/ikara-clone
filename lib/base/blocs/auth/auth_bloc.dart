@@ -15,6 +15,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     on<_AuthUserChanged>(_onAuthUserChanged);
     on<LogoutRequested>(_onLogoutRequested);
     on<DeleteAccountRequested>(_onDeleteAccountRequested);
+    on<AuthUserUpdate>(_onAuthUserUpdate);
   }
 
   Future<void> _onAppStarted(AppStarted event, Emitter emit) async {
@@ -51,5 +52,8 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     } catch (e) {
       emit(AuthError(e.toString()));
     }
+  }
+  void _onAuthUserUpdate(AuthUserUpdate event, Emitter emit) {
+    emit(AuthAuthenticated(event.user));
   }
 }

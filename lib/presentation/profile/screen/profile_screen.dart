@@ -5,14 +5,14 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:go_router/go_router.dart';
 import 'package:ikara_clone/constants/constants.dart';
-import 'package:ikara_clone/data/repositories/auth_repository.dart';
 import 'package:image_picker/image_picker.dart';
 
 import '../../../data/model/user/app_user.dart';
 import '../bloc/profile_bloc.dart';
 
 class ProfileScreen extends StatefulWidget {
-  const ProfileScreen({super.key});
+  final AppUser user;
+  const ProfileScreen({super.key, required this.user});
 
   @override
   State<ProfileScreen> createState() => _ProfileScreenState();
@@ -25,9 +25,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
   @override
   void initState() {
     super.initState();
-    final user = context.read<AuthRepository>().currentUser;
-    _nameController = TextEditingController(text: user?.name ?? '');
-    _statusController = TextEditingController(text: user?.status ?? '');
+    _nameController = TextEditingController(text: widget.user.name);
+    _statusController = TextEditingController(text: widget.user.status ?? '');
   }
 
   @override
@@ -186,7 +185,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final user = context.read<AuthRepository>().currentUser;
+    final user = widget.user;
     return BlocListener<ProfileBloc, ProfileState>(
       listener: (context, state) {
         if (state is ProfileSuccess) context.pop();
@@ -249,10 +248,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         backgroundColor: AppColors.avatarColor,
                         backgroundImage: _imagePicker != null
                             ? FileImage(_imagePicker!)
-                            : user?.image != null
-                            ? NetworkImage(user!.image!) as ImageProvider
+                            : user.image != null
+                            ? NetworkImage(user.image!) as ImageProvider
                             : null,
-                        child: (user?.image == null && _imagePicker == null)
+                        child: (user.image == null && _imagePicker == null)
                             ? Icon(
                                 Icons.person_outline_sharp,
                                 size: 60,
@@ -293,7 +292,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               const SizedBox(height: 8),
               TextField(
                 controller: _nameController,
-                enabled: user?.canChangeName ?? true,
+                enabled: user.canChangeName == true,
                 style: TextStyle(
                   fontWeight: FontWeight.w400,
                   fontFamily: 'Roboto',
@@ -301,7 +300,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   color: AppColors.primaryText,
                 ),
                 decoration: InputDecoration(
-                  hintText: (user?.name ?? '').isEmpty ? 'Nhập tên' : null,
+                  hintText: (user.name).isEmpty ? 'Nhập tên' : null,
                   hintStyle: TextStyle(
                     color: AppColors.primaryText,
                     fontSize: 14,
@@ -355,7 +354,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       color: AppColors.primaryText,
                     ),
                     decoration: InputDecoration(
-                      hintText: (user?.status ?? '').isEmpty
+                      hintText: (user.status ?? '').isEmpty
                           ? 'Nhập trạng thái...'
                           : null,
                       hintStyle: TextStyle(

@@ -58,7 +58,7 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
           if (!completer.isCompleted) completer.complete(OTPSent());
         },
         onError: (error) {
-          if (!completer.isCompleted) completer.complete(LoginError(error));
+          if (!completer.isCompleted) completer.complete(LoginError('Đã có lỗi vui lòng thử lại'));
         },
         onAutoVerified: (credential) {
           if (!completer.isCompleted) completer.complete(LoginSuccess());
@@ -74,6 +74,10 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
 
   Future<void> _onVerifyOTP(VerifyOTP event, Emitter emit) async {
     emit(LoginLoading());
+    if (!RegExp(r'^\d{6}$').hasMatch(event.code.trim())) {
+      emit(const LoginError('Mã OTP chỉ được chứa số'));
+      return;
+    }
     try {
       await _repository.verifyOTP(event.code);
       emit(LoginSuccess());
@@ -81,7 +85,7 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
       if (e.toString().contains('account_permanently_deleted')) {
         emit(const LoginError('Tài khoản đã bị xóa vĩnh viễn'));
       } else {
-        emit(LoginError(e.toString()));
+        emit(LoginError('Sai mã OTP'));
       }
     }
   }

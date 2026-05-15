@@ -120,26 +120,32 @@ class _VideoSectionState extends State<_VideoSection> {
 
   @override
   Widget build(BuildContext context) {
-    return SingleChildScrollView(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const SizedBox(height: 16),
-          VideoPlayerWidget(
-            videoUrl: widget.state.lesson.teachSingLink,
-            onControllerReady: (pause) {
-              _pauseVideo = pause;
-            },
+    return Column(
+      children: [
+        Expanded(
+          child: SingleChildScrollView(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const SizedBox(height: 16),
+                VideoPlayerWidget(
+                  videoUrl: widget.state.lesson.teachSingLink,
+                  onControllerReady: (pause) {
+                    _pauseVideo = pause;
+                  },
+                ),
+                const SizedBox(height: 16),
+                _title(),
+                const SizedBox(height: 20),
+                _instruct(),
+                const SizedBox(height: 10,)
+              ],
+            ),
           ),
-          const SizedBox(height: 16),
-          _title(),
-          const SizedBox(height: 20),
-          _instruct(),
-          const SizedBox(height: 20),
-          _toSing(context),
-          const SizedBox(height: 16),
-        ],
-      ),
+        ),
+        _toSing(context),
+        SizedBox(height: MediaQuery.of(context).padding.bottom + 16,)
+      ],
     );
   }
 
