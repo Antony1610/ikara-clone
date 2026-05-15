@@ -4,6 +4,7 @@ import 'package:ikara_clone/base/blocs/auth/auth_bloc.dart';
 
 import 'package:ikara_clone/presentation/breathing_lesson/screen/breathing_lesson_screen.dart';
 import 'package:ikara_clone/presentation/breathing_lesson_result/screen/breathing_lesson_result_screen.dart';
+import 'package:ikara_clone/presentation/cancel_account/screen/cancel_account_screen.dart';
 import 'package:ikara_clone/presentation/home/screen/home_screen.dart';
 import 'package:ikara_clone/presentation/lesson_detail/screen/lesson_detail_page_screen.dart';
 import 'package:ikara_clone/presentation/lesson/screen/lesson_page_screen.dart';
@@ -83,7 +84,7 @@ class AppRouter {
           key: state.pageKey,
           child: HomeScreen(navigationShell: navigationShell),
           transitionsBuilder: AppTransitions.fadeOutIn,
-          transitionDuration: Duration(milliseconds: 600)
+          transitionDuration: Duration(milliseconds: 600),
         ),
         branches: [
           StatefulShellBranch(
@@ -254,7 +255,7 @@ class AppRouter {
               create: (ctx) => ProfileBloc(
                 ctx.read<AuthRepository>(),
                 ctx.read<UserRepository>(),
-                ctx.read<AuthBloc>()
+                ctx.read<AuthBloc>(),
               ),
               child: ProfileScreen(user: user!),
             ),
@@ -267,6 +268,14 @@ class AppRouter {
         pageBuilder: (context, state) => CustomTransitionPage(
           key: state.pageKey,
           child: ReportErrorScreen(),
+          transitionsBuilder: AppTransitions.slideFromRight,
+        ),
+      ),
+      GoRoute(
+        path: '/cancel-account',
+        pageBuilder: (context, state) => CustomTransitionPage(
+          key: state.pageKey,
+          child: CancelAccountScreen(),
           transitionsBuilder: AppTransitions.slideFromRight,
         ),
       ),

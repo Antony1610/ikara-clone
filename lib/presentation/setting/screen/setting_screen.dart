@@ -180,7 +180,7 @@ class _SettingScreenState extends State<SettingScreen> {
           _MenuItem(
             icon: Icons.cancel_outlined,
             title: "Hủy tài khoản",
-            onTap: () => context.push('/delete-account'),
+            onTap: () => context.push('/cancel-account'),
           ),
           const SizedBox(height: 8),
           _MenuItem(

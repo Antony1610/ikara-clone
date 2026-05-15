@@ -16,6 +16,7 @@ class AppColors {
   static const Color whiteBackground = Color(0xFFFFFFFF);
   static const Color firstPopupResult = Color(0xFF7130ED);
   static const Color secPopupResult = Color(0xFF1C0183);
+  static const Color insideSetting = Color(0xFF170E42);
 
   ///Selection tab color
   static const Color selectionColor = Color(0xFF19A4FA);
@@ -43,6 +44,7 @@ class AppColors {
   static const Color phoneNumberLogin = Color(0xFF02D6BD);
   static const Color facebookLogin = Color(0xFF1977F3);
   static const Color googleLogin = Color(0xFFFFFFFF);
+  static const Color unFinishButton = Color(0xFFD9D9D9);
   ///Shadow
   static const Color blackShadow = Color.fromRGBO(0, 0, 0, 0.2);
 
