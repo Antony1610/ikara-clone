@@ -1,43 +1,44 @@
 import 'package:ikara_clone/data/model/lessons/lesson.dart';
 
 class Part {
+  final String indexId;
   final String id;
   final List<Lesson> lessons;
   final String title;
-  Part({required this.id, required this.lessons, required this.title});
+  Part({required this.indexId, required this.id, required this.lessons, required this.title});
 
-  factory Part.fromJson(Map<String, dynamic> json, String id) {
+  factory Part.fromJson(Map<String, dynamic> json, String indexId) {
     final lessonsRaw = json['lessons'];
-    final List<Map<String, dynamic>> lessonsJson;
+    final List<({Map<String, dynamic> data, String indexId})> lessonEntries;
 
     if (lessonsRaw is Map) {
-      final lessonsMap = Map<String, dynamic>.from(lessonsRaw);
-      lessonsJson = lessonsMap.entries.where((entry) => entry.value is Map).map(
-        (entry) {
-          final lesson = Map<String, dynamic>.from(entry.value as Map);
-          final lessonId = entry.key.toString();
-          return {...lesson, 'id': lessonId};
-        },
-      ).toList();
+      lessonEntries = Map<String, dynamic>.from(lessonsRaw)
+          .entries
+          .where((e) => e.value is Map)
+          .map((e) => (
+      data: Map<String, dynamic>.from(e.value as Map),
+      indexId: e.key.toString(),
+      ))
+          .toList();
     } else if (lessonsRaw is List) {
-      lessonsJson = lessonsRaw
+      lessonEntries = lessonsRaw
           .asMap()
           .entries
-          .where((entry) => entry.value is Map)
-          .map((entry) {
-            final lesson = Map<String, dynamic>.from(entry.value as Map);
-            final lessonId = entry.key.toString();
-            return {...lesson, 'id': lessonId};
-          })
+          .where((e) => e.value is Map)
+          .map((e) => (
+      data: Map<String, dynamic>.from(e.value as Map),
+      indexId: e.key.toString(),
+      ))
           .toList();
     } else {
-      lessonsJson = [];
+      lessonEntries = [];
     }
 
     return Part(
-      id: id,
-      lessons: lessonsJson
-          .map((data) => Lesson.fromJson(data, (data['id'] ?? '').toString()))
+      indexId: indexId,
+      id: (json['id'] ?? '').toString(),
+      lessons: lessonEntries
+          .map((entry) => Lesson.fromJson(entry.data, entry.indexId))
           .toList(),
       title: json['title'] ?? '',
     );

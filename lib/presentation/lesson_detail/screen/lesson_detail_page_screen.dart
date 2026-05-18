@@ -158,7 +158,8 @@ class _VideoSection extends StatelessWidget {
                 ),
                 child: LessonQuestionsSheet(
                   partId: state.partId,
-                  lessonId: state.lesson.id,
+                  lessonId: state.lesson.indexId,
+                  lessonRealId: state.lesson.id,
                   title: state.lesson.lessonTitle,
                 ),
               ),

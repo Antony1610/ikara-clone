@@ -20,16 +20,18 @@ class LessonError extends LessonState {
 class PartsLoaded extends LessonState {
   final List<Part> parts;
   final int currentIndex;
-  const PartsLoaded({required this.parts, this.currentIndex = 0});
-  PartsLoaded copyWith({List<Part>? parts, int? currentIndex}) {
+  final List<LessonUserResult> userResults;
+  const PartsLoaded({required this.parts, this.currentIndex = 0, this.userResults = const []});
+  PartsLoaded copyWith({List<Part>? parts, int? currentIndex, List<LessonUserResult>? userResults}) {
     return PartsLoaded(
       parts: parts ?? this.parts,
       currentIndex: currentIndex ?? this.currentIndex,
+      userResults: userResults ?? this.userResults
     );
   }
 
   @override
-  List<Object> get props => [parts, currentIndex];
+  List<Object> get props => [parts, currentIndex, userResults];
 }
 
 class LessonLoaded extends LessonState {

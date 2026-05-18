@@ -102,6 +102,7 @@ class MyApp extends StatelessWidget {
           create: (context) => UserRepositoryImpl(
             context.read<UserService>(),
             context.read<StorageService>(),
+            context.read<FirebaseService>()
           ),
         ),
       ],

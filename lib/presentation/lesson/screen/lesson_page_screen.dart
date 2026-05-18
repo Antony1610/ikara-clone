@@ -1,3 +1,4 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
@@ -5,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import 'package:ikara_clone/constants/constants.dart';
 import 'package:ikara_clone/data/model/model.dart';
 import 'package:ikara_clone/data/repositories/lessons_repository.dart';
+import 'package:ikara_clone/data/repositories/user_repository.dart';
 import 'package:ikara_clone/presentation/lesson/bloc/lesson_bloc.dart';
 import 'package:ikara_clone/presentation/lesson/widget/lesson_node.dart';
 
@@ -15,7 +17,7 @@ class LessonPageScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return BlocProvider(
       create: (ctx) =>
-          LessonBloc(ctx.read<LessonsRepository>())..add(LoadParts()),
+          LessonBloc(ctx.read<LessonsRepository>(), ctx.read<UserRepository>(), FirebaseAuth.instance.currentUser!.uid)..add(LoadParts()),
       child: const _LessonPageView(),
     );
   }
@@ -79,7 +81,6 @@ class _LessonListState extends State<_LessonList> {
   @override
   void initState() {
     super.initState();
-    // ✅ No scroll listener — zoom is tap-only
   }
 
   @override
@@ -91,7 +92,6 @@ class _LessonListState extends State<_LessonList> {
   @override
   Widget build(BuildContext context) {
     final state = context.watch<LessonBloc>().state;
-
     final screenHeight = MediaQuery.of(context).size.height;
     final appBarHeight = kToolbarHeight + MediaQuery.of(context).padding.top;
     final topPadding = appBarHeight + 24;
@@ -124,17 +124,31 @@ class _LessonListState extends State<_LessonList> {
           })
         >[];
     var globalIndex = 0;
+
+
+
     for (final part in state.parts) {
       for (var i = 0; i < part.lessons.length; i++) {
         lessonRows.add((
           lesson: part.lessons[i],
           partTitle: part.title,
-          partId: part.id,
+          partId: part.indexId,
           isFirstOfPart: i == 0,
           isLastOfPart: i == part.lessons.length - 1,
           globalIndex: globalIndex,
         ));
         globalIndex++;
+      }
+    }
+    final userResult = state.userResults;
+    bool isUnlocked(int globalIndex){
+      if (globalIndex == 0) return true;
+      final prevRow = lessonRows[globalIndex - 1];
+      try {
+        final prevResult = userResult.firstWhere((r) => r.id == prevRow.lesson.id);
+        return prevResult.process == 100;
+      } catch (_) {
+        return false;
       }
     }
 
@@ -159,6 +173,12 @@ class _LessonListState extends State<_LessonList> {
         final lesson = row.lesson;
         final isCurrent = index == currentIndex;
         final isLastInPart = row.isLastOfPart;
+        final unlocked = isUnlocked(index);
+        // int lessonProcess = 0;
+        // try {
+        //   final result = state.userResults.firstWhere((r) => r.id == lesson.id);
+        //   lessonProcess = result.process;
+        // } catch (_) {}
 
         return Column(
           children: [
@@ -193,16 +213,16 @@ class _LessonListState extends State<_LessonList> {
               const SizedBox(height: _partToLessonSpacing),
             ],
             GestureDetector(
-              onTap: () async {
+              onTap: unlocked ? () async {
                 if (_isTapInProgress) return;
                 _isTapInProgress = true;
 
                 context.read<LessonBloc>().add(LessonPageIndexChanged(index));
 
                 final partId = row.partId;
-                final lessonId = lesson.id;
+                final lessonId = lesson.indexId;
                 debugPrint(
-                  '[LessonPage] Tap lesson: partId=$partId, lessonId=$lessonId, title=${lesson.lessonTitle}',
+                  '[LessonPage] Tap lesson: partIndexId=$partId, lessonIndexId=$lessonId, title=${lesson.lessonTitle}',
                 );
 
                 try {
@@ -215,44 +235,61 @@ class _LessonListState extends State<_LessonList> {
                   if (!context.mounted) return;
                   _isTapInProgress = false;
                   await context.push('/lessonDetail/$partId/$lessonId');
+                  if (context.mounted) {
+                    context.read<LessonBloc>().add(LoadParts());
+                  }
                 } catch (_) {
                 } finally {
                   if (mounted) {
                     _isTapInProgress = false;
                   }
                 }
-              },
+              } : null,
               child: LessonNode(
                 isCurrent: isCurrent,
                 isPrev: false,
                 isNext: false,
-                child: Container(
-                  width: double.infinity,
-                  height: double.infinity,
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(20),
-                    color: AppColors.lessBorderColor,
-                    boxShadow: [
-                      BoxShadow(
-                        color: AppColors.blackShadow,
-                        blurRadius: isCurrent ? 18 : 6,
-                        offset: const Offset(0, 6),
-                      ),
-                    ],
-                  ),
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(10),
-                    child: Image.asset(
-                      'assets/lessons/lesson_${(index % 19) + 1}.jpg',
-                      fit: BoxFit.cover,
-                      errorBuilder: (_, __, ___) => const Icon(
-                        Icons.broken_image,
-                        color: AppColors.lockText,
-                        size: 32,
+                child: Stack(
+
+                  children: [
+                    Container(
+                    width: double.infinity,
+                    height: double.infinity,
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(20),
+                      color: AppColors.lessBorderColor,
+                      boxShadow: [
+                        BoxShadow(
+                          color: AppColors.blackShadow,
+                          blurRadius: isCurrent ? 18 : 6,
+                          offset: const Offset(0, 6),
+                        ),
+                      ],
+                    ),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(10),
+                      child: Image.asset(
+                        'assets/lessons/lesson_${(index % 19) + 1}.jpg',
+                        fit: BoxFit.cover,
+                        errorBuilder: (_, __, ___) => const Icon(
+                          Icons.broken_image,
+                          color: AppColors.lockText,
+                          size: 32,
+                        ),
                       ),
                     ),
-                  ),
+                    ),
+                    if (!unlocked)
+                      Positioned.fill(child: Container(
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(20),
+                          color: Colors.black12
+                        ),
+                        child: Center(child: Icon(Icons.lock, color: AppColors.primaryText, size: 32,)),
+                      ),
+                      )
+                  ]
                 ),
               ),
             ),
@@ -269,7 +306,7 @@ class _LessonListState extends State<_LessonList> {
                       ? lesson.lessonTitle
                       : 'Bài ${lesson.id}',
                   style: TextStyle(
-                    color: AppColors.primaryText,
+                    color: unlocked ? AppColors.primaryText : AppColors.hintText,
                     fontSize: isCurrent ? 14 : 12,
                     fontWeight: isCurrent ? FontWeight.bold : FontWeight.normal,
                   ),

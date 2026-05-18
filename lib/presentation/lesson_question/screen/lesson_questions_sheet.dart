@@ -1,20 +1,24 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:ikara_clone/constants/constants.dart';
 import 'package:ikara_clone/data/model/lessons/lessons.dart';
 import 'package:ikara_clone/data/repositories/lessons_repository.dart';
+import 'package:ikara_clone/data/repositories/user_repository.dart';
 import 'package:ikara_clone/presentation/lesson_question/bloc/lesson_question_bloc.dart';
 
 class LessonQuestionsSheet extends StatefulWidget {
   final String partId;
   final String lessonId;
+  final String lessonRealId;
   final String title;
 
   const LessonQuestionsSheet({
     super.key,
     required this.partId,
     required this.lessonId,
+    required this.lessonRealId,
     required this.title,
   });
 
@@ -80,8 +84,8 @@ class _LessonQuestionsSheetState extends State<LessonQuestionsSheet> {
   @override
   Widget build(BuildContext context) {
     return BlocProvider(
-      create: (_) => LessonQuestionBloc(context.read<LessonsRepository>())
-        ..add(LoadLessonQuestion(widget.partId, widget.lessonId, widget.title)),
+      create: (_) => LessonQuestionBloc(context.read<LessonsRepository>(), context.read<UserRepository>(), FirebaseAuth.instance.currentUser!.uid)
+        ..add(LoadLessonQuestion(widget.partId, widget.lessonId,widget.lessonRealId ,widget.title)),
       child: _buildBody(),
     );
   }

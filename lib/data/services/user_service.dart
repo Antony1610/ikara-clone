@@ -49,10 +49,6 @@ class UserService {
     }
   }
 
-  Future<void> updateUser(String uid, Map<String, dynamic> data) async {
-    await _db.ref('users/$uid').update(data);
-  }
-
   Future<bool> isAccountPendingDeletion(String uid) async {
     final snapshot = await _db.ref('users/$uid/deletedAt').get();
     if (!snapshot.exists || snapshot.value == null) return false;
@@ -71,4 +67,10 @@ class UserService {
       'deletedAt': DateTime.now().millisecondsSinceEpoch,
     });
   }
+
+  Future<void> updateAtPath(String path, Map<String, dynamic> data) async {
+    await _db.ref(path).update(data);
+  }
+
+
 }

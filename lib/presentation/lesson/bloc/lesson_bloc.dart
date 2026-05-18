@@ -2,13 +2,17 @@ import 'package:bloc/bloc.dart';
 import 'package:equatable/equatable.dart';
 import 'package:ikara_clone/data/model/model.dart';
 import 'package:ikara_clone/constants/constants.dart';
+import 'package:ikara_clone/data/model/user/lesson_user_result.dart';
 import 'package:ikara_clone/data/repositories/lessons_repository.dart';
+import 'package:ikara_clone/data/repositories/user_repository.dart';
 part 'lesson_event.dart';
 part 'lesson_state.dart';
 
 class LessonBloc extends Bloc<LessonEvent, LessonState> {
   final LessonsRepository _lessonsRepository;
-  LessonBloc(this._lessonsRepository) : super(LessonInitial()) {
+  final UserRepository _userRepository;
+  final String uid;
+  LessonBloc(this._lessonsRepository, this._userRepository, this.uid) : super(LessonInitial()) {
     on<LoadParts>(_onLoadParts);
     on<LoadLessons>(_onLoadLessons);
     on<LessonPageIndexChanged>(_onIndexChanged);
@@ -21,8 +25,28 @@ class LessonBloc extends Bloc<LessonEvent, LessonState> {
 
     try {
       final parts = await _lessonsRepository.getParts();
-
-      emit(PartsLoaded(parts: parts));
+      final userResult = await _userRepository.getListLessonResult(uid);
+      int currentIndex = 0;
+      int globalIndex = 0;
+      bool found = false;
+      for (final part in parts) {
+        for (final lesson in part.lessons){
+          if (!found) {
+            try {
+              final result = userResult.firstWhere((r) => r.id == lesson.id);
+              if (result.process < 100) {
+                currentIndex = globalIndex;
+                found = true;
+              }
+            } catch (_) {
+              currentIndex = globalIndex;
+              found = true;
+            }
+          }
+          globalIndex++;
+        }
+      }
+      emit(PartsLoaded(parts: parts, userResults: userResult, currentIndex: currentIndex));
     } on NetworkException catch (e) {
       emit(LessonError('Lỗi mạng: ${e.message}'));
     } on AppException catch (e) {
@@ -36,19 +60,17 @@ class LessonBloc extends Bloc<LessonEvent, LessonState> {
     LoadLessons event,
     Emitter<LessonState> emit,
   ) async {
-    // Giữ lại parts để có thể back về
     final current = state;
     if (current is! PartsLoaded) return;
 
     emit(LessonLoading());
 
     try {
-      final lessons = await _lessonsRepository.getLesson(event.partId);
 
       final selectedPart = current.parts.firstWhere(
         (p) => p.id == event.partId,
       );
-      emit(LessonLoaded(selectedPart: selectedPart, lessons: lessons));
+      emit(LessonLoaded(selectedPart: selectedPart, lessons: selectedPart.lessons));
     } on AppException catch (e) {
       emit(LessonError(e.message));
     } catch (e) {

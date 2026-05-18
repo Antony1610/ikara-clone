@@ -54,6 +54,7 @@ class FirebaseService {
   // }
 
   final DatabaseReference _db = FirebaseDatabase.instance.ref();
+  DatabaseReference get db => _db;
   // List<T> _mapToList<T>({
   //   required dynamic data,
   //   required T Function(Map<String, dynamic>, String id) fromJson,
@@ -89,7 +90,6 @@ class FirebaseService {
 
     final data = snapshot.value;
 
-    // ✅ Trường hợp Map
     if (data is Map) {
       return data.entries
           .where((e) => e.value is Map)
@@ -102,7 +102,6 @@ class FirebaseService {
           .toList();
     }
 
-    // ✅ Trường hợp List
     if (data is List) {
       return data
           .asMap()
@@ -132,4 +131,15 @@ class FirebaseService {
     }
     return null;
   }
+
+  Future<void> saveResult<T>({
+    required String path,
+    required T result,
+    required Map<String, dynamic> Function(T) toJson,
+  }) async {
+    final json = toJson(result);
+    await _db.child(path).set(json);
+  }
+
+
 }

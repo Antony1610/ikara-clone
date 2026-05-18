@@ -19,6 +19,7 @@ class LessonQuestionError extends LessonQuestionState {
 
 class LessonQuestionLoaded extends LessonQuestionState {
   final String lessonId;
+  final String lessonRealId;
   final String lessonTitle;
   final List<Question> questions;
   final List<int?> userAnswer;
@@ -26,10 +27,11 @@ class LessonQuestionLoaded extends LessonQuestionState {
   final bool isCompleted;
   final int score;
   final List<QuestionResult> questionResult;
-  final LessonResult? lessonResult; // nullable vì chưa có khi mới load
+  final LessonResult? lessonResult;
 
   const LessonQuestionLoaded({
     required this.lessonId,
+    required this.lessonRealId,
     required this.lessonTitle,
     required this.questions,
     required this.userAnswer,
@@ -42,6 +44,7 @@ class LessonQuestionLoaded extends LessonQuestionState {
 
   LessonQuestionLoaded copyWith({
     String? lessonId,
+    String? lessonRealId,
     String? lessonTitle,
     List<Question>? questions,
     List<int?>? userAnswer,
@@ -53,6 +56,7 @@ class LessonQuestionLoaded extends LessonQuestionState {
   }) {
     return LessonQuestionLoaded(
       lessonId: lessonId ?? this.lessonId,
+      lessonRealId: lessonRealId ?? this.lessonRealId,
       lessonTitle: lessonTitle ?? this.lessonTitle,
       questions: questions ?? this.questions,
       userAnswer: userAnswer ?? this.userAnswer,

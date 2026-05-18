@@ -5,8 +5,9 @@ sealed class LessonQuestionEvent {}
 class LoadLessonQuestion extends LessonQuestionEvent {
   final String partId;
   final String lessonId;
+  final String lessonRealId;
   final String title;
-  LoadLessonQuestion(this.partId, this.lessonId, this.title);
+  LoadLessonQuestion(this.partId, this.lessonId,this.lessonRealId, this.title);
 }
 
 class SelectAnswer extends LessonQuestionEvent{
