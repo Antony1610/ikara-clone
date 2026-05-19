@@ -114,8 +114,7 @@ class _PhoneNumberSendOtpState extends State<PhoneNumberSendOtp> {
                 ),
           
                 const SizedBox(height: 50),
-          
-                /// ✅ TextField KHÔNG rebuild theo bloc
+
                 TextField(
                   controller: _phoneController,
                   keyboardType: TextInputType.phone,
@@ -157,8 +156,7 @@ class _PhoneNumberSendOtpState extends State<PhoneNumberSendOtp> {
                 ),
           
                 const SizedBox(height: 24),
-          
-                /// ✅ Chỉ button rebuild khi state đổi
+
                 BlocBuilder<LoginBloc, LoginState>(
                   builder: (context, state) {
                     return SizedBox(

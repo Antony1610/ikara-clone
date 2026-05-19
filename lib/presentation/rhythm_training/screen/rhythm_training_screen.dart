@@ -1,3 +1,4 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
@@ -5,6 +6,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:ikara_clone/constants/app_colors.dart';
 import 'package:ikara_clone/data/model/rhythms/rhythms.dart';
 import 'package:ikara_clone/data/repositories/rhythms_repository.dart';
+import 'package:ikara_clone/data/repositories/user_repository.dart';
 import 'package:ikara_clone/presentation/rhythm_training/bloc/rhythm_training_bloc.dart';
 
 class RhythmTrainingScreen extends StatefulWidget {
@@ -18,13 +20,15 @@ class _RhythmTrainingScreenState extends State<RhythmTrainingScreen> {
   @override
   Widget build(BuildContext context) {
     return BlocProvider(
-      create: (ctx) =>
-          RhythmTrainingBloc(ctx.read<RhythmsRepository>())..add(RhythmLoad()),
+      create: (ctx) => RhythmTrainingBloc(
+        ctx.read<RhythmsRepository>(),
+        FirebaseAuth.instance.currentUser!.uid,
+        ctx.read<UserRepository>(),
+      )..add(RhythmLoad()),
       child: const _RhythmPageView(),
     );
   }
 }
-
 
 class _RhythmPageView extends StatelessWidget {
   const _RhythmPageView();
@@ -65,8 +69,6 @@ class _RhythmPageView extends StatelessWidget {
   }
 }
 
-
-
 class _RhythmLessonList extends StatefulWidget {
   const _RhythmLessonList();
 
@@ -89,18 +91,20 @@ class _RhythmLessonListState extends State<_RhythmLessonList> {
               style: const TextStyle(color: Colors.redAccent),
             ),
           ),
-          RhythmLoaded(:final parts) => _RhythmListView(parts),
+          RhythmLoaded(:final parts, :final starCount) => _RhythmListView(
+            parts,
+            starCount,
+          ),
         };
       },
     );
   }
 }
 
-
-
 class _RhythmListView extends StatelessWidget {
   final List<RhythmsPart> parts;
-  const _RhythmListView(this.parts);
+  final Map<int, int> starCount;
+  const _RhythmListView(this.parts, this.starCount);
 
   @override
   Widget build(BuildContext context) {
@@ -114,15 +118,17 @@ class _RhythmListView extends StatelessWidget {
       ),
       itemCount: parts.length,
       separatorBuilder: (_, __) => const SizedBox(height: 12),
-      itemBuilder: (context, index) => _RhythmPartCard(
-        part: parts[index],
-        isLocked: index > 0,
-        stars: 0, // TODO: user progress
-      ),
+      itemBuilder: (context, index) {
+        final isLocked = index > 0 && (starCount[parts[index - 1].id] ?? 0) < 1;
+        return _RhythmPartCard(
+          part: parts[index],
+          isLocked: isLocked,
+          stars: starCount[parts[index].id] ?? 0,
+        );
+      },
     );
   }
 }
-
 
 class _RhythmPartCard extends StatelessWidget {
   final RhythmsPart part;
@@ -142,9 +148,7 @@ class _RhythmPartCard extends StatelessWidget {
       duration: const Duration(milliseconds: 300),
       child: Container(
         decoration: BoxDecoration(
-          color: isLocked
-              ? AppColors.buttonLesson
-              : AppColors.lessonFocusColor,
+          color: isLocked ? AppColors.buttonLesson : AppColors.lessonFocusColor,
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
             color: isLocked ? AppColors.lockText : AppColors.lessBorderColor,
@@ -197,7 +201,6 @@ class _RhythmPartCard extends StatelessWidget {
   }
 }
 
-
 class _StartButton extends StatelessWidget {
   final RhythmsPart part;
   const _StartButton({required this.part});
@@ -209,7 +212,7 @@ class _StartButton extends StatelessWidget {
       height: 44,
       child: ElevatedButton(
         onPressed: () {
-          context.push('/rhythm/${part.id}');
+          context.push('/rhythm/${part.indexId}');
         },
         style: ElevatedButton.styleFrom(
           backgroundColor: AppColors.buttonInsideLesson,

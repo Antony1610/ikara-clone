@@ -12,9 +12,6 @@ class KaraokeAudioRepositoryImpl implements KaraokeAudioRepository {
   Stream<double> get pitchStream => _karaokeService.pitchStream;
 
   @override
-  Stream<int> get volumeStream => _karaokeService.volumeStream;
-
-  @override
   Stream<int> get playbackProgressStream =>
       _karaokeService.playbackProgressStream;
 

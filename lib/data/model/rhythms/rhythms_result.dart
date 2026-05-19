@@ -1,5 +1,6 @@
 class RhythmsResult {
   final String rhythmId;
+  final String? nextId;
   final int score;
   final int perfect;
   final int late;
@@ -7,6 +8,7 @@ class RhythmsResult {
   final int miss;
   RhythmsResult({
     required this.rhythmId,
+    this.nextId,
     required this.score,
     required this.perfect,
     required this.late,

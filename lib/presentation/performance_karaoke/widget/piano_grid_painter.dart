@@ -167,9 +167,9 @@ class PianoGridPainter extends CustomPainter {
       double startX = rawStartX + strokeRadius;
       double endX = rawEndX - strokeRadius;
 
-      // Xử lý nốt quá ngắn (thời lượng ngắn khiến endX bị lùi sâu hơn startX)
+      // Xử lý nốt quá ngắn
       if (endX < startX) {
-        endX = startX + 0.1; // Vẽ thành một chấm tròn
+        endX = startX + 0.1;
       }
 
       // 3. Bỏ qua nếu note hoàn toàn nằm ngoài màn hình (tính cả phần bo tròn)
@@ -220,18 +220,12 @@ class PianoGridPainter extends CustomPainter {
       }
     }
 
-    // -------------------------
-    // PLAYHEAD
-    // -------------------------
     canvas.drawLine(
       Offset(playheadX, 0),
       Offset(playheadX, size.height),
       _playheadPaint,
     );
 
-    // -------------------------
-    // USER DOT
-    // -------------------------
     if (userMidi > 0) {
       final userY = (size.height - (userMidi - minPitch + 1) * pitchHeight)
           .clamp(0.0, size.height);

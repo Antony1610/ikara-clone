@@ -1,14 +1,16 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:ikara_clone/constants/constants.dart';
 import 'package:ikara_clone/data/repositories/audio_repository.dart';
 import 'package:ikara_clone/data/repositories/breaths_repository.dart';
+import 'package:ikara_clone/data/repositories/user_repository.dart';
 import 'package:ikara_clone/presentation/breathing_lesson_detail/bloc/breathing_lesson_detail_bloc.dart';
 
-const _dialogTitleStyle = TextStyle(fontFamily: 'Roboto', fontWeight: FontWeight.w700, fontSize: 18);
-const _dialogCancelStyle = TextStyle(fontFamily: 'Roboto', color: AppColors.lockText, fontWeight: FontWeight.w500, fontSize: 16);
-const _dialogConfirmStyle = TextStyle(fontFamily: 'Roboto', color: AppColors.buttonInsideLesson, fontWeight: FontWeight.w500, fontSize: 16);
+const _dialogTitleStyle = TextStyle(fontFamily: 'Roboto', fontWeight: FontWeight.w700, fontSize: 12);
+const _dialogCancelStyle = TextStyle(fontFamily: 'Roboto', color: AppColors.lockText, fontWeight: FontWeight.w500, fontSize: 12);
+const _dialogConfirmStyle = TextStyle(fontFamily: 'Roboto', color: AppColors.buttonInsideLesson, fontWeight: FontWeight.w500, fontSize: 12);
 const _appBarTitleStyle = TextStyle(fontFamily: 'Roboto', color: AppColors.primaryText, fontWeight: FontWeight.w700, fontSize: 16);
 const _timerStyle = TextStyle(fontFamily: 'Roboto', fontSize: 24, fontWeight: FontWeight.w700, color: AppColors.primaryText);
 const _richTextBaseStyle = TextStyle(fontFamily: 'Roboto', fontSize: 16, color: AppColors.primaryText, fontWeight: FontWeight.w700);
@@ -40,6 +42,8 @@ class _BreathingLessonDetailScreenState extends State<BreathingLessonDetailScree
     _bloc = BreathingLessonDetailBloc(
       repository: context.read<BreathsRepository>(),
       audioRepository: context.read<AudioRepository>(),
+      uid: FirebaseAuth.instance.currentUser!.uid,
+      userRepository: context.read<UserRepository>()
     )..add(InitBreathing(widget.id));
   }
 
@@ -70,7 +74,7 @@ class _LessonDetailViewState extends State<_LessonDetailView> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        content: Text('Bạn chắc chắn muốn hủy bài không?', style: _dialogTitleStyle),
+        content: Text('Bạn chắc chắn muốn hủy bài không?', style: _dialogTitleStyle, textAlign: TextAlign.center,),
         actions: [
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceAround,
@@ -98,7 +102,7 @@ class _LessonDetailViewState extends State<_LessonDetailView> {
         if (state is DetailCompleted) {
           WidgetsBinding.instance.addPostFrameCallback((_) {
             if (!mounted) return;
-            context.pushReplacement('/breathing-result', extra: {
+            context.go('/breathing-result', extra: {
               'id': state.id,
               'score': state.score,
               'type': state.type,

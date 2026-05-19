@@ -13,7 +13,6 @@ class RhythmGameResultBloc
   void _onLoadResultEvent(LoadResultEvent event, Emitter emit) {
     final result = event.result;
 
-    // result.score bây giờ đã là điểm số sau khi trừ điểm spam (ví dụ: 10/100)
     int score = result.score;
     int starCount = 0;
 

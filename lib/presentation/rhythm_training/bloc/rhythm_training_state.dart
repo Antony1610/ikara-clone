@@ -19,7 +19,8 @@ class RhythmError extends RhythmTrainingState {
 
 class RhythmLoaded extends RhythmTrainingState {
   final List<RhythmsPart> parts;
-  const RhythmLoaded(this.parts);
+  final Map<int, int> starCount;
+  const RhythmLoaded(this.parts, this.starCount);
   @override
-  List<Object> get props => [parts];
+  List<Object> get props => [parts, starCount];
 }

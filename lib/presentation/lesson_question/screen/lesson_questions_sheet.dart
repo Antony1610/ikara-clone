@@ -76,8 +76,7 @@ class _LessonQuestionsSheetState extends State<LessonQuestionsSheet> {
     );
 
     if (confirmed == true && context.mounted) {
-      context.pop();
-      context.pop();
+      context.go('/lesson');
     }
   }
 
@@ -102,7 +101,7 @@ class _LessonQuestionsSheetState extends State<LessonQuestionsSheet> {
             state.isCompleted &&
             state.lessonResult != null) {
           Navigator.of(context).pop();
-          context.pushReplacement('/lesson-result', extra: state.lessonResult);
+          context.go('/lesson-result', extra: state.lessonResult);
         }
       },
       builder: (context, state) {

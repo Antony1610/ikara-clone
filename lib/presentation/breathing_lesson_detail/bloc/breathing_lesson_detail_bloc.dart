@@ -3,7 +3,9 @@ import 'dart:async';
 import 'package:equatable/equatable.dart';
 import 'package:bloc/bloc.dart';
 import 'package:ikara_clone/data/model/breaths/breaths.dart';
+import 'package:ikara_clone/data/model/user/breath_user_result.dart';
 import 'package:ikara_clone/data/repositories/breaths_repository.dart';
+import 'package:ikara_clone/data/repositories/user_repository.dart';
 
 import '../../../data/repositories/audio_repository.dart';
 
@@ -14,6 +16,8 @@ class BreathingLessonDetailBloc
     extends Bloc<BreathingLessonDetailEvent, BreathingLessonDetailState> {
   final AudioRepository _audioRepository;
   final BreathsRepository _repository;
+  final String uid;
+  final UserRepository _userRepository;
   StreamSubscription<int>? _resultSubscription;
   Timer? _timer;
 
@@ -29,8 +33,11 @@ class BreathingLessonDetailBloc
   BreathingLessonDetailBloc({
     required BreathsRepository repository,
     required AudioRepository audioRepository,
+    required this.uid,
+    required UserRepository userRepository,
   }) : _repository = repository,
         _audioRepository = audioRepository,
+  _userRepository = userRepository,
         super(DetailInitial()) {
     on<InitBreathing>(_onInit);
     on<StartBreathing>(_onStartBreathing);
@@ -43,7 +50,7 @@ class BreathingLessonDetailBloc
     try {
       emit(DetailLoading());
       final breathDetail = await _repository.getDetailParts(event.id);
-      await _audioRepository.init(); // ✅ initRecorder → init
+      await _audioRepository.init();
       emit(
         DetailLoaded(
           breathsPart: breathDetail,
@@ -76,10 +83,10 @@ class BreathingLessonDetailBloc
       ),
     );
 
-    await _audioRepository.startRecording(); // ✅
+    await _audioRepository.startRecording();
 
     _resultSubscription?.cancel();
-    _resultSubscription = _audioRepository.volumeStream.listen((sample) { // ✅ resultStream → volumeStream
+    _resultSubscription = _audioRepository.volumeStream.listen((sample) {
       add(UpdateVolume(sample));
     });
   }
@@ -101,7 +108,7 @@ class BreathingLessonDetailBloc
     _timer?.cancel();
     _resultSubscription?.cancel();
 
-    await _audioRepository.stopRecording(); // ✅
+    await _audioRepository.stopRecording();
 
     if (state is! DetailLoaded) return;
     final currentState = state as DetailLoaded;
@@ -115,6 +122,7 @@ class BreathingLessonDetailBloc
           duration: currentState.targetDuration,
         ),
       );
+      _userRepository.updateUserBreaths(uid, BreathUserResult(id: currentState.breathsPart.id, score: currentState.score));
     } else {
       emit(
         currentState.copyWith(
@@ -186,7 +194,7 @@ class BreathingLessonDetailBloc
   Future<void> close() {
     _resultSubscription?.cancel();
     _timer?.cancel();
-    _audioRepository.dispose(); // ✅
+    _audioRepository.dispose();
     return super.close();
   }
 }

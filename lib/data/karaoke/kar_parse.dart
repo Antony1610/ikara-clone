@@ -7,9 +7,9 @@ import '../model/performances/lyrics_token.dart';
 import '../model/performances/midi_note.dart';
 import 'midi_reader.dart';
 
-// ---------------------------------------------------------------------------
-// TCVN3 support (Giữ nguyên logic của bạn)
-// ---------------------------------------------------------------------------
+
+// TCVN3 support
+
 const _tcvn3Chars = {
   'µ','¸','¶','·','¹','¨','»','¾','¼','½','Æ','©','Ç','Ê','È','É','Ë','®',
   'Ì','Ð','Î','Ï','Ñ','ª','Ò','Õ','Ó','Ô','Ö','×','Ý','Ø','Ü','Þ','ß','ã',
@@ -29,9 +29,9 @@ String _convertTCVN3(String text) {
   return text;
 }
 
-// ---------------------------------------------------------------------------
-// Decoder cải tiến: Tránh rác tối đa
-// ---------------------------------------------------------------------------
+
+// Decoder
+
 String _decodeUtf16LE(Uint8List data) {
   final chars = <int>[];
   for (int i = 0; i + 1 < data.length; i += 2) {

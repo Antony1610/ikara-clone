@@ -1,6 +1,5 @@
 abstract class KaraokeAudioRepository {
   Stream<double> get pitchStream;
-  Stream<int> get volumeStream;
   Stream<int> get playbackProgressStream;
 
   Future<void> start(String audioUrl);

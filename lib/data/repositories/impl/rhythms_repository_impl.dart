@@ -10,16 +10,16 @@ class RhythmsRepositoryImpl implements RhythmsRepository {
   static const _tag = 'RhythmsRepositoryImpl';
   RhythmsRepositoryImpl(this._service);
   @override
-  Future<RhythmsPart?> getRhythmsById(String id) async {
+  Future<RhythmsPart?> getRhythmsById(String indexId) async {
     try {
       return await _service.getItem(
-        path: '$kdbRhythms/$kdbParts/$id',
+        path: '$kdbRhythms/$kdbParts/$indexId',
         fromJson: (json, id) => RhythmsPart.fromJson(json, id),
       );
     } on AppException catch (e, st) {
       AppLogger.logError(
         tag: '$_tag.getRhythmsById',
-        message: 'AppException (id: $id)',
+        message: 'AppException (id: $indexId)',
         error: e,
         stackTrace: st,
       );
@@ -27,7 +27,7 @@ class RhythmsRepositoryImpl implements RhythmsRepository {
     } catch (e, st) {
       AppLogger.logError(
         tag: '$_tag.getRhythmsById',
-        message: 'Unexpected error (id: $id)',
+        message: 'Unexpected error (id: $indexId)',
         error: e,
         stackTrace: st,
       );

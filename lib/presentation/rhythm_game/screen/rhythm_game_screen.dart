@@ -1,3 +1,4 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -6,6 +7,7 @@ import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:ikara_clone/constants/constants.dart';
 import 'package:ikara_clone/data/repositories/rhythms_repository.dart';
+import 'package:ikara_clone/data/repositories/user_repository.dart';
 import 'package:ikara_clone/presentation/rhythm_game/bloc/rhythm_game_bloc.dart';
 
 import '../../../data/model/model.dart';
@@ -49,7 +51,7 @@ class _RhythmGameScreenState extends State<RhythmGameScreen>
   @override
   void initState() {
     super.initState();
-    _bloc = RhythmGameBloc(context.read<RhythmsRepository>())
+    _bloc = RhythmGameBloc(context.read<RhythmsRepository>(), FirebaseAuth.instance.currentUser!.uid, context.read<UserRepository>())
       ..add(LoadGame(widget.id));
 
     _ticker = createTicker((elapsed) {

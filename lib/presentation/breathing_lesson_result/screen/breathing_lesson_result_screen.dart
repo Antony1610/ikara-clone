@@ -22,7 +22,7 @@ class BreathingLessonResultScreen extends StatelessWidget {
     return 0;
   }
 
-  // Cần ít nhất 1 sao (score >= 30) để qua bài tiếp theo
+
   bool get canGoNext => score >= 30;
 
   @override
@@ -33,7 +33,7 @@ class BreathingLessonResultScreen extends StatelessWidget {
       appBar: AnimatedAppBar(
         appBar: AppBar(
           leading: IconButton(
-            onPressed: () => context.pop(),
+            onPressed: () => context.go('/breathing'),
             icon: const Icon(Icons.arrow_back_ios),
           ),
           title: Text(
@@ -169,7 +169,7 @@ class BreathingLessonResultScreen extends StatelessWidget {
                       borderRadius: BorderRadius.circular(5),
                     ),
                   ),
-                  onPressed: () => context.pushReplacement('/breathingDetail/$id'),
+                  onPressed: () => context.go('/breathingDetail/$id'),
                   child: Text(
                     'Thử lại',
                     style: TextStyle(fontFamily: 'Roboto',
@@ -180,7 +180,8 @@ class BreathingLessonResultScreen extends StatelessWidget {
                   ),
                 ),
               ),
-               SizedBox(height: MediaQuery.of(context).padding.bottom),
+              SizedBox(height: MediaQuery.of(context).padding.bottom),
+              SizedBox(height: 20,)
             ],
           ),
         ),

@@ -20,7 +20,8 @@ class BreathingError extends BreathingState {
 
 class PartsLoaded extends BreathingState {
   final List<BreathsPart> parts;
-  const PartsLoaded(this.parts);
+  final Map<int, int> starCount;
+  const PartsLoaded(this.parts, this.starCount);
   @override
   List<Object> get props => [parts];
 }

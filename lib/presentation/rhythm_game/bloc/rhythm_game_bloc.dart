@@ -1,19 +1,23 @@
 import 'package:bloc/bloc.dart';
 import 'package:equatable/equatable.dart';
 import 'package:ikara_clone/data/model/rhythms/rhythms.dart';
+import 'package:ikara_clone/data/model/user/rhythms_user_result.dart';
 import 'package:ikara_clone/data/repositories/rhythms_repository.dart';
 import 'package:ikara_clone/constants/constants.dart';
+import 'package:ikara_clone/data/repositories/user_repository.dart';
 
 part 'rhythm_game_event.dart';
 part 'rhythm_game_state.dart';
 
 class RhythmGameBloc extends Bloc<RhythmGameEvent, RhythmGameState> {
   final RhythmsRepository _rhythmsRepository;
-
+  final String uid;
+  final UserRepository _userRepository;
   final int bpm = 60;
   late final double msPerBeat;
 
-  RhythmGameBloc(this._rhythmsRepository) : super(RhythmGameInitial()) {
+  RhythmGameBloc(this._rhythmsRepository, this.uid, this._userRepository)
+    : super(RhythmGameInitial()) {
     msPerBeat = (60 / bpm) * 1000;
 
     on<LoadGame>(_onLoadGame);
@@ -62,11 +66,13 @@ class RhythmGameBloc extends Bloc<RhythmGameEvent, RhythmGameState> {
       emit(
         RhythmGameLoaded(
           partId: event.partId,
+          lessonId: part.id,
           notes: parsedNotes,
           title: part.title,
           currentTimeMs: -2000,
           feedbackText: 'Sẵn sàng',
           isPlaying: false,
+          pattern: part.pattern,
         ),
       );
     } on AppException catch (e) {
@@ -82,7 +88,7 @@ class RhythmGameBloc extends Bloc<RhythmGameEvent, RhythmGameState> {
     final s = state as RhythmGameLoaded;
 
     final firstBeat = s.notes.firstWhere(
-          (n) => n.type == NoteType.beat,
+      (n) => n.type == NoteType.beat,
       orElse: () => s.notes.first,
     );
 
@@ -119,8 +125,9 @@ class RhythmGameBloc extends Bloc<RhythmGameEvent, RhythmGameState> {
 
     List<Note> updateNotes = List.from(currentState.notes);
 
-    // ✅ Khai báo ở đây để add miss vào tappedNote
-    final List<TappedNote> updatedTappedNotes = List.from(currentState.tappedNote);
+    final List<TappedNote> updatedTappedNotes = List.from(
+      currentState.tappedNote,
+    );
 
     String newFeedback = currentState.feedbackText;
     bool hasUpdate = false;
@@ -137,7 +144,6 @@ class RhythmGameBloc extends Bloc<RhythmGameEvent, RhythmGameState> {
 
           final tapped = TappedNote(timeMs: newTimeMs, status: HitStatus.miss);
 
-          // ✅ Add miss vào tappedNote để _onFinishedGame đếm được
           updatedTappedNotes.add(tapped);
 
           newFeedback = tapped.feedbackText;
@@ -177,7 +183,7 @@ class RhythmGameBloc extends Bloc<RhythmGameEvent, RhythmGameState> {
         currentTimeMs: newTimeMs,
         feedbackText: hasUpdate ? newFeedback : currentState.feedbackText,
         tappedNote: hasUpdate ? updatedTappedNotes : currentState.tappedNote,
-        tapCount: hasUpdate ? currentState.tapCount + 1 : currentState.tapCount
+        tapCount: hasUpdate ? currentState.tapCount + 1 : currentState.tapCount,
       ),
     );
   }
@@ -228,7 +234,7 @@ class RhythmGameBloc extends Bloc<RhythmGameEvent, RhythmGameState> {
       updateNotes[idx] = targetNote.copyWith(
         status: newStatus,
         isHighlighted:
-        newStatus == HitStatus.perfect || newStatus == HitStatus.miss,
+            newStatus == HitStatus.perfect || newStatus == HitStatus.miss,
       );
 
       final tapped = TappedNote(
@@ -245,7 +251,6 @@ class RhythmGameBloc extends Bloc<RhythmGameEvent, RhythmGameState> {
       final candidates = updateNotes
           .where((n) => n.status == HitStatus.none)
           .toList();
-
 
       if (candidates.isEmpty) {
         final tapped = TappedNote(
@@ -265,7 +270,7 @@ class RhythmGameBloc extends Bloc<RhythmGameEvent, RhythmGameState> {
       }
 
       candidates.sort(
-            (a, b) => (a.timeMs - currentState.currentTimeMs).abs().compareTo(
+        (a, b) => (a.timeMs - currentState.currentTimeMs).abs().compareTo(
           (b.timeMs - currentState.currentTimeMs).abs(),
         ),
       );
@@ -299,12 +304,12 @@ class RhythmGameBloc extends Bloc<RhythmGameEvent, RhythmGameState> {
         notes: updateNotes,
         feedbackText: currentFeedback,
         tappedNote: updatedTappedNotes,
-        tapCount: currentState.tapCount + 1
+        tapCount: currentState.tapCount + 1,
       ),
     );
   }
 
-  void _onFinishedGame(FinishedGame event, Emitter emit) {
+  Future<void> _onFinishedGame(FinishedGame event, Emitter emit) async {
     if (state is! RhythmGameLoaded) return;
     final current = state as RhythmGameLoaded;
 
@@ -323,6 +328,7 @@ class RhythmGameBloc extends Bloc<RhythmGameEvent, RhythmGameState> {
             late: 0,
             early: 0,
             rhythmId: event.partId,
+            nextId: '',
           ),
         ),
       );
@@ -358,19 +364,25 @@ class RhythmGameBloc extends Bloc<RhythmGameEvent, RhythmGameState> {
     // Tap thừa = tổng tap vượt quá số beat thực tế → phạt 1.0 điểm mỗi tap
     final extraTaps = (total - totalBeats).clamp(0, total);
 
-    double rawScore = (perfect * 1.0)
-        + (early * 0.7)
-        + (late * 0.7)
-        - (missed * 0.3)
-        - (extraTaps * 1.0);
+    double rawScore =
+        (perfect * 1.0) +
+        (early * 0.7) +
+        (late * 0.7) -
+        (missed * 0.3) -
+        (extraTaps * 1.0);
 
     rawScore = rawScore.clamp(0, double.infinity);
     final score = ((rawScore / totalBeats) * 100).clamp(0, 100).round();
-
+    final parts = await _rhythmsRepository.getRhythmsList();
+    final currentIndex = parts.indexWhere((p) => p.indexId == current.partId);
+    final nextRhythmId = (currentIndex != -1 && currentIndex + 1 < parts.length)
+        ? parts[currentIndex + 1].indexId
+        : null;
     emit(
       RhythmGameCompleted(
         RhythmsResult(
           rhythmId: event.partId,
+          nextId: nextRhythmId,
           score: score,
           perfect: perfect,
           late: late,
@@ -379,5 +391,16 @@ class RhythmGameBloc extends Bloc<RhythmGameEvent, RhythmGameState> {
         ),
       ),
     );
+    await _userRepository.updateUserRhythms(
+      uid,
+      RhythmsUserResult(
+        id: current.lessonId,
+        pattern: current.pattern,
+        score: score,
+        status: 'READY',
+        title: current.title,
+      ),
+    );
+
   }
 }

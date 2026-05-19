@@ -19,6 +19,7 @@ class RhythmGameError extends RhythmGameState {
 
 class RhythmGameLoaded extends RhythmGameState {
   final String partId;
+  final int lessonId;
   final List<Note> notes;
   final List<TappedNote> tappedNote;
   final int currentTimeMs;
@@ -27,8 +28,10 @@ class RhythmGameLoaded extends RhythmGameState {
   final bool isPlaying;
   final bool justStarted;
   final int tapCount;
+  final String pattern;
   const RhythmGameLoaded({
     required this.partId,
+    this.lessonId = 0,
     this.notes = const [],
     this.tappedNote = const [],
     this.currentTimeMs = 0,
@@ -36,10 +39,12 @@ class RhythmGameLoaded extends RhythmGameState {
     this.title = '',
     this.justStarted = false,
     this.isPlaying = false,
-    this.tapCount = 0
+    this.tapCount = 0,
+    this.pattern = '',
   });
   RhythmGameLoaded copyWith({
     String? partId,
+    int? lessonId,
     List<Note>? notes,
     List<TappedNote>? tappedNote,
     int? currentTimeMs,
@@ -47,10 +52,12 @@ class RhythmGameLoaded extends RhythmGameState {
     String? title,
     bool? isPlaying,
     bool? justStarted,
-    int? tapCount
+    int? tapCount,
+    String? pattern
   }) {
     return RhythmGameLoaded(
       partId: partId ?? this.partId,
+      lessonId: lessonId ?? this.lessonId,
       notes: notes ?? this.notes,
       tappedNote: tappedNote ?? this.tappedNote,
       currentTimeMs: currentTimeMs ?? this.currentTimeMs,
@@ -58,7 +65,8 @@ class RhythmGameLoaded extends RhythmGameState {
       title: title ?? this.title,
       isPlaying: isPlaying ?? this.isPlaying,
       justStarted: justStarted ?? this.justStarted,
-      tapCount: tapCount ?? this.tapCount
+      tapCount: tapCount ?? this.tapCount,
+      pattern: pattern ?? this.pattern
     );
   }
 

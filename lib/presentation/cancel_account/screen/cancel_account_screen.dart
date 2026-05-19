@@ -159,7 +159,7 @@ class _CheckListStep extends StatelessWidget {
           topRight: Radius.circular(16),
         ),
       ),
-      child: Column( // ✅ Column thay vì SingleChildScrollView
+      child: Column(
         children: [
           Expanded(
             child: SingleChildScrollView(

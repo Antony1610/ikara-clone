@@ -156,7 +156,7 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
   @override
   Widget build(BuildContext context) {
     if (!_controller.value.isInitialized) {
-      return LayoutBuilder( // ← thay hardcode height
+      return LayoutBuilder(
         builder: (context, constraints) {
           final height = constraints.maxWidth * (9 / 16); // 16:9 placeholder
           return Container(
@@ -180,12 +180,10 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
               onTap: _showControlsTemporarily,
               child: SizedBox(
                 width: constraints.maxWidth,
-                // Tính height từ aspectRatio thực của video + width hiện tại
                 height: constraints.maxWidth / _controller.value.aspectRatio,
                 child: Stack(
                   alignment: Alignment.bottomCenter,
                   children: [
-                    // Fit video vào SizedBox thay vì AspectRatio
                     FittedBox(
                       fit: BoxFit.cover,
                       child: SizedBox(

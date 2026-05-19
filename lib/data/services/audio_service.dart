@@ -16,14 +16,16 @@ class AudioService {
   Stream<int> get resultStream =>
       _resultController?.stream ?? const Stream.empty();
 
+  Future<bool> _requestMicPermission() async {
+    final status = await Permission.microphone.request();
+    return status.isGranted;
+  }
+
   Future<void> initRecorder() async {
     if (_isInitialized) return;
 
-    final status = await Permission.microphone.request();
-
-    if (!status.isGranted) {
-      throw Exception('Microphone denied');
-    }
+    final granted = await _requestMicPermission();
+    if (!granted) throw Exception("Microphone permission denied");
 
     await _recorder.openRecorder();
     await _recorder.setSubscriptionDuration(const Duration(milliseconds: 20));

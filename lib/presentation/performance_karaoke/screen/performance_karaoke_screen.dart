@@ -348,13 +348,11 @@ class _PerformanceKaraokeScreenState extends State<PerformanceKaraokeScreen> {
     );
   }
 
-  // ✅ View chỉ add Event — BLoC tự gọi pause() trên repository
   void _pause(BuildContext context) {
     context.read<PerformanceKaraokeBloc>().add(PauseKaraoke());
     if (mounted) setState(() => isExpanded = true);
   }
 
-  // ✅ View chỉ add Event — BLoC tự gọi resume() trên repository
   void _resume(BuildContext context) {
     context.read<PerformanceKaraokeBloc>().add(ResumeKaraoke());
     if (mounted) setState(() => isExpanded = false);
@@ -383,7 +381,6 @@ class _NoteBarConnector extends StatelessWidget {
       builder: (context, state) {
         if (state is! LoadedKaraoke) return const SizedBox.shrink();
 
-        // ✅ Gọi scoring callback mỗi khi rebuild
         WidgetsBinding.instance.addPostFrameCallback((_) {
           onScoring(state);
         });

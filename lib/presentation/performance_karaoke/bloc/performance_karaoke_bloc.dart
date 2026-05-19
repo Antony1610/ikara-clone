@@ -16,7 +16,7 @@ part 'performance_karaoke_state.dart';
 class PerformanceKaraokeBloc
     extends Bloc<PerformanceKaraokeEvent, PerformanceKaraokeState> {
   final PerformanceRepository repository;
-  final KaraokeAudioRepository karaokeAudioRepository; // ✅ abstract
+  final KaraokeAudioRepository karaokeAudioRepository;
   final Dio dio;
   StreamSubscription? _pitchSubscription;
   StreamSubscription? _playbackSubscription;
@@ -24,10 +24,8 @@ class PerformanceKaraokeBloc
   PerformanceKaraokeBloc({
     required this.repository,
     required this.dio,
-    required this.karaokeAudioRepository, // ✅
+    required this.karaokeAudioRepository,
   }) : super(InitialKaraoke()) {
-    // ⚠️ Stream subscription nên trong handler, không phải constructor
-    // Nhưng giữ nguyên pattern này nếu project đang dùng
     _playbackSubscription = karaokeAudioRepository.playbackProgressStream.listen((ms) {
       add(UpdatePlaybackTime(ms));
     });
@@ -58,7 +56,7 @@ class PerformanceKaraokeBloc
         final parse = KarParser();
         final song = parse.parse(midiBytes);
         emit(LoadedKaraoke(lesson: lesson, song: song));
-        await karaokeAudioRepository.start(lesson.karaokeLink); // ✅
+        await karaokeAudioRepository.start(lesson.karaokeLink);
       } else {
         throw Exception("Không thể tải nhạc. Mã lỗi ${response.statusCode}");
       }
@@ -86,7 +84,7 @@ class PerformanceKaraokeBloc
   void _onPauseKaraoke(PauseKaraoke event, Emitter emit) {
     final s = state;
     if (s is LoadedKaraoke) {
-      karaokeAudioRepository.pause(); // ✅ gọi pause thật sự
+      karaokeAudioRepository.pause();
       emit(s.copyWith(isPlaying: false));
     }
   }
@@ -94,7 +92,7 @@ class PerformanceKaraokeBloc
   void _onResumeKaraoke(ResumeKaraoke event, Emitter emit) {
     final s = state;
     if (s is LoadedKaraoke) {
-      karaokeAudioRepository.resume(); // ✅ gọi resume thật sự
+      karaokeAudioRepository.resume();
       emit(s.copyWith(isPlaying: true));
     }
   }
@@ -103,7 +101,7 @@ class PerformanceKaraokeBloc
   Future<void> close() async {
     await _pitchSubscription?.cancel();
     await _playbackSubscription?.cancel();
-    await karaokeAudioRepository.stop(); // ✅
+    await karaokeAudioRepository.stop();
     return super.close();
   }
 }

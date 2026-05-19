@@ -80,7 +80,7 @@ class LessonQuestionBloc
         LessonUserResult(
           id: currentState.lessonRealId,
           process: process,
-          status: "LOCKED",
+          status: 'READY',
         ),
       );
       if (currentState.currentIndex < currentState.questions.length - 1) {

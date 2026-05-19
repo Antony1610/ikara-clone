@@ -175,7 +175,7 @@ class LessonResultScreen extends StatelessWidget {
             Padding(
               padding: EdgeInsets.only(top: 16,left: 16, right: 16, bottom: 16 + MediaQuery.of(context).padding.bottom),
               child: GestureDetector(
-                onTap: () => context.pop(true),
+                onTap: () => context.go('/lesson'),
                 child: Container(
                   width: double.infinity,
                   height: 50,

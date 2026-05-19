@@ -38,7 +38,6 @@ class _KaraokeLyricsWidgetState extends State<KaraokeLyricsWidget> {
     _LyricLine current = _LyricLine();
     for (int i = 0; i < widget.tokens.length; i++) {
       final t = widget.tokens[i];
-      // Nếu gặp ký hiệu xuống dòng và dòng hiện tại đã có chữ, thì ngắt dòng
       if ((t.isNewVerse || t.isNewLine) && current.tokens.isNotEmpty) {
         lines.add(current);
         current = _LyricLine();
@@ -65,7 +64,6 @@ class _KaraokeLyricsWidgetState extends State<KaraokeLyricsWidget> {
       }
     }
 
-    // Luôn hiển thị 2 dòng: Dòng hiện tại và dòng tiếp theo
     final line1 = activeLineIdx < lines.length ? lines[activeLineIdx] : null;
     final line2 = activeLineIdx + 1 < lines.length ? lines[activeLineIdx + 1] : null;
 

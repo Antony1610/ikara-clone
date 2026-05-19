@@ -1,15 +1,17 @@
 enum BeatType { beat, rest }
 
 class RhythmsPart {
-  final String id;
+  final String indexId;
+  final int id;
   final String pattern;
   final String title;
 
-  RhythmsPart({required this.id, required this.pattern, required this.title});
+  RhythmsPart({required this.indexId,required this.id, required this.pattern, required this.title});
 
-  factory RhythmsPart.fromJson(Map<String, dynamic> json, String id) {
+  factory RhythmsPart.fromJson(Map<String, dynamic> json, String indexId) {
     return RhythmsPart(
-      id: id,
+      indexId: indexId,
+      id: json['id'],
       pattern: json['pattern'] ?? '',
       title: json['title'] ?? '',
     );

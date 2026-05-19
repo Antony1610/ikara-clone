@@ -6,7 +6,6 @@ import 'package:ikara_clone/constants/constants.dart';
 import 'package:ikara_clone/data/model/model.dart';
 import 'package:ikara_clone/presentation/rhythm_game_result/bloc/rhythm_game_result_bloc.dart';
 
-
 class RhythmGameResultScreen extends StatelessWidget {
   final RhythmsResult result;
   const RhythmGameResultScreen({super.key, required this.result});
@@ -102,8 +101,7 @@ class _RhythmResultView extends StatelessWidget {
                               Icons.star,
                               size: 64,
                               color: isEarned
-                                  ? AppColors
-                                        .starColor
+                                  ? AppColors.starColor
                                   : AppColors.lockText,
                             ),
                           );
@@ -141,31 +139,27 @@ class _RhythmResultView extends StatelessWidget {
                       const Spacer(),
 
                       if (state.isPassed) ...[
-                        _buildButton(
-                          text: 'Bài tập tiếp theo',
-                          backgroundColor: AppColors.buttonInsideLesson,
-                          textColor: Colors.white,
-                          onPressed: () {
-                            // TODO: Chuyển sang bài tiếp theo
-                          },
-                        ),
-                        const SizedBox(height: 16),
+                        if (state.result.nextId != null) ...[
+                          _buildButton(
+                            text: 'Bài tập tiếp theo',
+                            backgroundColor: AppColors.buttonInsideLesson,
+                            textColor: Colors.white,
+                            onPressed: () => context.go('/rhythm/${state.result.nextId}'),
+                          ),
+                          const SizedBox(height: 16),
+                        ],
                         _buildButton(
                           text: 'Thử lại',
                           backgroundColor: AppColors.tryAgainButton,
                           textColor: AppColors.primaryText,
-                          onPressed: () {
-                            context.go('/rhythm/${state.result.rhythmId}');
-                          },
+                          onPressed: () => context.go('/rhythm/${state.result.rhythmId}'),
                         ),
                       ] else ...[
                         _buildButton(
                           text: 'Thử lại',
                           backgroundColor: AppColors.tryAgainButton,
                           textColor: Colors.white,
-                          onPressed: () {
-                            context.go('/rhythm/${state.result.rhythmId}');
-                          },
+                          onPressed: () => context.go('/rhythm/${state.result.rhythmId}'),
                         ),
                       ],
 

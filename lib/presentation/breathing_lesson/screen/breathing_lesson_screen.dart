@@ -1,3 +1,4 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
@@ -5,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import 'package:ikara_clone/constants/constants.dart';
 import 'package:ikara_clone/data/model/breaths/breaths.dart';
 import 'package:ikara_clone/data/repositories/breaths_repository.dart';
+import 'package:ikara_clone/data/repositories/user_repository.dart';
 import 'package:ikara_clone/presentation/breathing_lesson/bloc/breathing_bloc.dart';
 
 class BreathingLessonScreen extends StatefulWidget {
@@ -18,15 +20,17 @@ class _BreathingLessonScreenState extends State<BreathingLessonScreen> {
   @override
   Widget build(BuildContext context) {
     return BlocProvider(
-      create: (ctx) =>
-          BreathingBloc(ctx.read<BreathsRepository>())
-            ..add(BreathingPartLoad()),
+      create: (ctx) => BreathingBloc(
+        ctx.read<BreathsRepository>(),
+        FirebaseAuth.instance.currentUser!.uid,
+        ctx.read<UserRepository>(),
+      )..add(BreathingPartLoad()),
       child: const _BreathingPageView(),
     );
   }
 }
 
-// ─── Page ─────────────────────────────────────────────────────────────────────
+// Page
 
 class _BreathingPageView extends StatelessWidget {
   const _BreathingPageView();
@@ -89,7 +93,10 @@ class _BreathingLessonListState extends State<_BreathingLessonList> {
               style: const TextStyle(color: Colors.redAccent),
             ),
           ),
-          PartsLoaded(:final parts) => _PartListView(parts),
+          PartsLoaded(:final parts, :final starCount) => _PartListView(
+            parts,
+            starCount,
+          ),
         };
       },
     );
@@ -98,7 +105,8 @@ class _BreathingLessonListState extends State<_BreathingLessonList> {
 
 class _PartListView extends StatelessWidget {
   final List<BreathsPart> parts;
-  const _PartListView(this.parts);
+  final Map<int, int> starCount;
+  const _PartListView(this.parts, this.starCount);
 
   @override
   Widget build(BuildContext context) {
@@ -112,11 +120,14 @@ class _PartListView extends StatelessWidget {
       ),
       itemCount: parts.length,
       separatorBuilder: (_, __) => const SizedBox(height: 12),
-      itemBuilder: (context, index) => _BreathingPartCard(
-        part: parts[index],
-        isLocked: index > 0,
-        stars: 0, // TODO: user progress
-      ),
+      itemBuilder: (context, index) {
+        final isLocked = index > 0 && (starCount[parts[index - 1].id] ?? 0) < 1;
+        return _BreathingPartCard(
+          part: parts[index],
+          isLocked: isLocked,
+          stars: starCount[parts[index].id] ?? 0,
+        );
+      },
     );
   }
 }
@@ -208,7 +219,7 @@ class _StartButton extends StatelessWidget {
       height: 44,
       child: ElevatedButton(
         onPressed: () {
-          context.push('/breathingDetail/${part.partId}');
+          context.go('/breathingDetail/${part.partId}');
         },
         style: ElevatedButton.styleFrom(
           backgroundColor: AppColors.buttonInsideLesson,
