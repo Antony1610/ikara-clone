@@ -1,3 +1,4 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_svg/svg.dart';
@@ -6,6 +7,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:ikara_clone/constants/constants.dart';
 import 'package:ikara_clone/data/model/model.dart';
 import 'package:ikara_clone/data/repositories/practices_repository.dart';
+import 'package:ikara_clone/data/repositories/user_repository.dart';
 import 'package:ikara_clone/presentation/practices/bloc/practices_bloc.dart';
 
 class PracticesScreen extends StatefulWidget {
@@ -19,8 +21,11 @@ class _PracticesScreenState extends State<PracticesScreen> {
   @override
   Widget build(BuildContext context) {
     return BlocProvider(
-      create: (ctx) =>
-          PracticesBloc(ctx.read<PracticesRepository>())..add(PracticesLoad()),
+      create: (ctx) => PracticesBloc(
+        ctx.read<PracticesRepository>(),
+        FirebaseAuth.instance.currentUser!.uid,
+        ctx.read<UserRepository>(),
+      )..add(PracticesLoad()),
       child: const _PracticesPageView(),
     );
   }
@@ -84,7 +89,10 @@ class _PracticesListState extends State<_PracticesList> {
           PracticesError(:final message) => Center(
             child: Text(message, style: TextStyle(color: Colors.redAccent)),
           ),
-          PracticesLoaded(:final parts) => _PracticesListView(parts),
+          PracticesLoaded(:final parts, :final starCount) => _PracticesListView(
+            parts,
+            starCount,
+          ),
         };
       },
     );
@@ -93,14 +101,20 @@ class _PracticesListState extends State<_PracticesList> {
 
 class _PracticesListView extends StatelessWidget {
   final List<PracticesPart> parts;
-  const _PracticesListView(this.parts);
+  final Map<int, int> starCount;
+  const _PracticesListView(this.parts, this.starCount);
 
   @override
   Widget build(BuildContext context) {
     return ListView.builder(
       key: const PageStorageKey('practices-list'),
       itemBuilder: (context, index) {
-        return _PracticesCard(part: parts[index], index: index);
+        return _PracticesCard(
+          part: parts[index],
+          index: index,
+          star: starCount[parts[index].id] ?? 0,
+          isLocked: index == 0 ? false : (starCount[parts[index - 1].id] ?? 0) == 0,
+        );
       },
       itemCount: parts.length,
       padding: EdgeInsets.only(
@@ -116,15 +130,20 @@ class _PracticesListView extends StatelessWidget {
 class _PracticesCard extends StatefulWidget {
   final PracticesPart part;
   final int index;
-  const _PracticesCard({required this.part, required this.index});
+  final int star;
+  final bool isLocked;
+  const _PracticesCard({
+    required this.part,
+    required this.index,
+    required this.star,
+    required this.isLocked,
+  });
 
   @override
   State<_PracticesCard> createState() => _PracticesCardState();
 }
 
 class _PracticesCardState extends State<_PracticesCard> {
-  bool get _isLocked => widget.index > 2;
-  int? get star => widget.index < 2 ? 3 : null;
 
   @override
   Widget build(BuildContext context) {
@@ -158,8 +177,8 @@ class _PracticesCardState extends State<_PracticesCard> {
                 const Spacer(),
 
                 _ActionButton(
-                  isLocked: _isLocked,
-                  onTap: _isLocked ? null : () => _onStart(context),
+                  isLocked: widget.isLocked,
+                  onTap: widget.isLocked ? null : () => _onStart(context),
                 ),
               ],
             ),
@@ -167,7 +186,7 @@ class _PracticesCardState extends State<_PracticesCard> {
 
           const SizedBox(width: 16),
 
-          _CardRight(isLocked: _isLocked, star: star),
+          _CardRight(isLocked: widget.isLocked, star: widget.star),
         ],
       ),
     );
@@ -197,7 +216,7 @@ class _CardRight extends StatelessWidget {
           height: 100,
         ),
 
-        if (star != null) ...[const SizedBox(height: 8), _StarRow(star: star!)],
+        if (!isLocked) ...[const SizedBox(height: 8), _StarRow(star: star!)],
       ],
     );
   }
@@ -254,7 +273,7 @@ class _ActionButton extends StatelessWidget {
           children: [
             Icon(
               isLocked ? Icons.lock : Icons.play_arrow,
-              color: isLocked ? AppColors.lockText : Colors.white ,
+              color: isLocked ? AppColors.lockText : Colors.white,
               size: 12,
             ),
             const SizedBox(width: 6),

@@ -229,12 +229,14 @@ class _RhythmGameScreenState extends State<RhythmGameScreen>
                 children: [
                   const SizedBox(height: 20),
 
-                  Text(
-                    state.title,
-                    style: GoogleFonts.roboto(
-                      fontSize: 16,
-                      color: AppColors.primaryText,
-                      fontWeight: FontWeight.w700,
+                  Center(
+                    child: Text(
+                      state.title,
+                      style: GoogleFonts.roboto(
+                        fontSize: 16,
+                        color: AppColors.primaryText,
+                        fontWeight: FontWeight.w700,
+                      ),
                     ),
                   ),
 

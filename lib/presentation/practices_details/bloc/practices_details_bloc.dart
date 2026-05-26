@@ -167,7 +167,7 @@ class PracticesDetailsBloc
         } else if (currentTimeMs > note.startMs + note.durationMs) {
           lo = mid + 1;
         } else {
-          if ((userMidi - note.midiPitch).abs() <= 1.0) {
+          if ((userMidi - note.midiPitch).abs() <= 0.4) {
             newTotalHitMs += delta;
             updatedHitDurations[note.startMs] =
                 (updatedHitDurations[note.startMs] ?? 0.0) + delta;

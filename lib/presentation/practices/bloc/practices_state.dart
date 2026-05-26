@@ -20,7 +20,8 @@ class PracticesError extends PracticesState {
 
 class PracticesLoaded extends PracticesState {
   final List<PracticesPart> parts;
-  const PracticesLoaded(this.parts);
+  final Map<int, int> starCount;
+  const PracticesLoaded(this.parts, this.starCount);
   @override
   List<Object> get props => [parts];
 }

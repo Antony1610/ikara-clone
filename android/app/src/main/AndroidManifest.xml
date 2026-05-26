@@ -13,7 +13,7 @@
     </queries>
 
     <application
-        android:label="ikara_clone"
+        android:label="Ikara"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
 
