@@ -12,13 +12,17 @@ import 'package:ikara_clone/data/repositories/impl/breaths_repository_impl.dart'
 import 'package:ikara_clone/data/repositories/impl/karaoke_audio_repository_impl.dart';
 
 import 'package:ikara_clone/data/repositories/impl/lessons_repository_impl.dart';
+import 'package:ikara_clone/data/repositories/impl/midi_parse_repository_impl.dart';
 import 'package:ikara_clone/data/repositories/impl/performance_repository_impl.dart';
+import 'package:ikara_clone/data/repositories/impl/practices_audio_repository_impl.dart';
 import 'package:ikara_clone/data/repositories/impl/practices_repository_impl.dart';
 import 'package:ikara_clone/data/repositories/impl/rhythms_repository_impl.dart';
 import 'package:ikara_clone/data/repositories/impl/user_repository_impl.dart';
 import 'package:ikara_clone/data/repositories/karaoke_audio_repository.dart';
 import 'package:ikara_clone/data/repositories/lessons_repository.dart';
+import 'package:ikara_clone/data/repositories/midi_parse_repository.dart';
 import 'package:ikara_clone/data/repositories/performance_repository.dart';
+import 'package:ikara_clone/data/repositories/practices_audio_repository.dart';
 import 'package:ikara_clone/data/repositories/practices_repository.dart';
 import 'package:ikara_clone/data/repositories/rhythms_repository.dart';
 import 'package:ikara_clone/data/repositories/user_repository.dart';
@@ -26,6 +30,7 @@ import 'package:ikara_clone/data/services/audio_service.dart';
 import 'package:ikara_clone/data/services/auth_service.dart';
 import 'package:ikara_clone/data/services/firebase_service.dart';
 import 'package:ikara_clone/data/services/karaoke_audio_service.dart';
+import 'package:ikara_clone/data/services/practices_audio_service.dart';
 import 'package:ikara_clone/data/services/storage_service.dart';
 import 'package:ikara_clone/data/services/user_service.dart';
 import 'package:ikara_clone/firebase_options.dart';
@@ -58,6 +63,7 @@ class MyApp extends StatelessWidget {
         RepositoryProvider<UserService>(create: (_) => UserService()),
         RepositoryProvider<StorageService>(create: (_) => StorageService()),
         RepositoryProvider<AudioService>(create: (_) => AudioService()),
+        RepositoryProvider<PracticesAudioService>(create: (_) => PracticesAudioService()),
         RepositoryProvider<KaraokeAudioService>(
           create: (_) => KaraokeAudioService(),
         ),
@@ -105,6 +111,13 @@ class MyApp extends StatelessWidget {
             context.read<FirebaseService>()
           ),
         ),
+        RepositoryProvider<PracticesAudioRepository>(
+          create: (context) => PracticesAudioRepositoryImpl(
+            context.read<PracticesAudioService>(),
+          ),
+        ),
+        RepositoryProvider<MidiParseRepository>(create: (context) => MidiParseRepositoryImpl()),
+        RepositoryProvider<PracticesRepository>(create: (context) => PracticesRepositoryImpl(context.read<FirebaseService>()))
       ],
       child: MultiBlocProvider(
         providers: [

@@ -1,11 +1,13 @@
 class PracticesPart {
-  final String id;
+  final String indexId;
+  final int id;
   final String description;
   final String image;
   final String midiUrl;
   final String mp3Url;
   final String name;
   PracticesPart({
+    required this.indexId,
     required this.id,
     required this.description,
     required this.image,
@@ -13,9 +15,10 @@ class PracticesPart {
     required this.mp3Url,
     required this.name,
   });
-  factory PracticesPart.fromJson(Map<String, dynamic> json, String id) {
+  factory PracticesPart.fromJson(Map<String, dynamic> json, String indexId) {
     return PracticesPart(
-      id: id,
+      indexId: indexId,
+      id: json['id'],
       description: json['description'],
       image: json['image'],
       midiUrl: json['midiUrl'],

@@ -4,6 +4,7 @@ import 'dart:io';
 
 
 import 'package:ikara_clone/data/model/user/breath_user_result.dart';
+import 'package:ikara_clone/data/model/user/practices_user_result.dart';
 import 'package:ikara_clone/data/model/user/rhythms_user_result.dart';
 
 import '../model/user/app_user.dart';
@@ -22,5 +23,7 @@ abstract class UserRepository {
   Future<BreathUserResult?> getUserBreath(String uid, BreathUserResult userResult);
   Future<List<BreathUserResult>> getListBreathsResult(String uid);
   Future<void> updateUserBreaths(String uid, BreathUserResult userResult);
-
+  Future<PracticesUserResult?> getUserPractices(String uid, PracticesUserResult userResult);
+  Future<List<PracticesUserResult>> getListPracticesResult(String uid);
+  Future<void> updateUserPractices(String uid, PracticesUserResult userResult);
 }

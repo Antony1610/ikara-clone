@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:ikara_clone/data/model/user/app_user.dart';
 import 'package:ikara_clone/data/model/user/breath_user_result.dart';
 import 'package:ikara_clone/data/model/user/lesson_user_result.dart';
+import 'package:ikara_clone/data/model/user/practices_user_result.dart';
 import 'package:ikara_clone/data/model/user/rhythms_user_result.dart';
 import 'package:ikara_clone/data/repositories/user_repository.dart';
 import 'package:ikara_clone/data/services/firebase_service.dart';
@@ -20,6 +21,7 @@ class UserRepositoryImpl implements UserRepository {
     this._storageService,
     this._firebaseService,
   );
+
   @override
   Future<AppUser?> getUser(String uid) async {
     final data = await _userService.fetchUser(uid);
@@ -171,6 +173,33 @@ class UserRepositoryImpl implements UserRepository {
       final results = await getListBreathsResult(uid);
       final newIndex = results.length;
       final path = '$kdbUsers/$uid/$kdbBreaths/$kdbParts/$newIndex';
+      await _firebaseService.saveResult(path: path, result: userResult, toJson: (r) => r.toJson());
+    }
+  }
+
+  @override
+  Future<List<PracticesUserResult>> getListPracticesResult(String uid) async {
+    final result = await _firebaseService.getList(path: '$kdbUsers/$uid/$kdbPractices/$kdbParts', fromJson: (json, indexId) => PracticesUserResult.fromJson(json, indexId));
+    return result;
+  }
+
+  @override
+  Future<PracticesUserResult?> getUserPractices(String uid, PracticesUserResult userResult) async {
+    final result = await _firebaseService.getItem(path: '$kdbUsers/$uid/$kdbPractices/$kdbParts/${userResult.indexId}', fromJson: (json, indexId) => PracticesUserResult.fromJson(json, indexId));
+    return result;
+  }
+
+  @override
+  Future<void> updateUserPractices(String uid, PracticesUserResult userResult) async {
+    final existing = await getUserPractices(uid, userResult);
+    if (existing != null && userResult.score <= existing.score) return;
+    if (existing != null) {
+      final path = '$kdbUsers/$uid/$kdbPractices/$kdbParts/${existing.indexId}';
+      await _firebaseService.saveResult(path: path, result: userResult, toJson: (r) => r.toJson());
+    } else {
+      final results = await getListPracticesResult(uid);
+      final newIndex = results.length;
+      final path = '$kdbUsers/$uid/$kdbPractices/$kdbParts/$newIndex';
       await _firebaseService.saveResult(path: path, result: userResult, toJson: (r) => r.toJson());
     }
   }

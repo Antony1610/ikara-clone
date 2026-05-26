@@ -167,9 +167,9 @@ class PianoGridPainter extends CustomPainter {
       double startX = rawStartX + strokeRadius;
       double endX = rawEndX - strokeRadius;
 
-      // Xử lý nốt quá ngắn
+      // Xử lý nốt quá ngắn (thời lượng ngắn khiến endX bị lùi sâu hơn startX)
       if (endX < startX) {
-        endX = startX + 0.1;
+        endX = startX + 0.1; // Vẽ thành một chấm tròn
       }
 
       // 3. Bỏ qua nếu note hoàn toàn nằm ngoài màn hình (tính cả phần bo tròn)

@@ -75,4 +75,15 @@ class AppColors {
   ///Rhythms game
   static const Color noteColor = Color(0xFFD9D9D9);
 
+  /// Practices
+  static const Color userDot = Color(0xFFEB26FF);
+  static const Color noteHit = Color(0xFF4FF3FF);
+  static const Color highNote = Color(0xFF9364FF);
+  static const Color lowNote = Color(0XFF5228CF);
+  static const Color pauseButton = Color(0XFF5228CF);
+  static const Color firstBackgroundPractices = Color(0xFF340693);
+  static const Color secBackgroundPractices = Color(0xFF800DAE);
+  static const Color thirdBackgroundPractices = Color(0xFF6C12C2);
+  static const Color fourBackgroundPractices = Color(0xFF5F0FAC);
+  static const Color pracScoreColor = Color(0xFF26FFFF);
 }

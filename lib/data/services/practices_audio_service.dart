@@ -1,0 +1,169 @@
+import 'dart:async';
+import 'dart:io';
+import 'package:flutter/services.dart';
+import 'package:flutter_sound/flutter_sound.dart';
+import 'package:ikara_clone/data/services/pitch_detector_service.dart';
+import 'package:permission_handler/permission_handler.dart';
+
+class PracticesAudioService {
+  final FlutterSoundPlayer _player = FlutterSoundPlayer();
+  final FlutterSoundRecorder _recorder = FlutterSoundRecorder();
+  final PitchDetectorService _pitchDetector = PitchDetectorService();
+
+  final _pitchController = StreamController<double>.broadcast();
+  Stream<double> get pitchStream => _pitchController.stream;
+
+  Stream<Duration> get positionStream => _positionBroadcast ?? Stream.empty();
+
+  StreamController<Uint8List>? _audioController;
+  StreamSubscription? _audioSubscription;
+
+  Stream<Duration>? _positionBroadcast;
+
+  final _frameQueue = StreamController<Uint8List>.broadcast();
+  StreamSubscription? _queueSubscription;
+  final _completeController = StreamController<void>.broadcast();
+  Stream<void> get onCompleteStream => _completeController.stream;
+
+  final List<int> _sampleAccumulator = [];
+  static const int _requiredSamples = 1024;
+  static const int _requiredBytes = _requiredSamples * 2;
+
+  bool _isRecording = false;
+  String? _loadedFilePath;
+  bool _isProcessing = false;
+
+  Future<bool> _requestMicPermission() async {
+    final status = await Permission.microphone.request();
+    return status.isGranted;
+  }
+
+  Future<String> _loadAssetToFile(String fileName) async {
+    final assetPath = 'assets/assets_data/Practices/$fileName';
+    final byteData = await rootBundle.load(assetPath);
+    final bytes = byteData.buffer.asUint8List();
+    final file = File('${Directory.systemTemp.path}/$fileName');
+    if (!file.existsSync() || await file.length() != bytes.length) {
+      await file.writeAsBytes(bytes);
+    }
+    return file.path;
+  }
+
+  Future<void> load(String fileName) async {
+    _loadedFilePath = await _loadAssetToFile(fileName);
+  }
+
+  Future<void> start() async {
+    assert(_loadedFilePath != null, 'Gọi load() trước khi start()');
+
+    await Future.wait([
+      _pitchDetector.initialize(
+        sampleRate: 44100,
+        bufferSize: _requiredSamples,
+        threshold: 0.15,
+      ),
+      _requestMicPermission().then((granted) {
+        if (!granted) throw Exception('Microphone permission denied');
+      }),
+      _player.openPlayer(),
+      _recorder.openRecorder(),
+    ]);
+
+    await _player.setSubscriptionDuration(const Duration(milliseconds: 50));
+
+    _queueSubscription = _frameQueue.stream.listen((frame) async {
+      if (_isProcessing) return;
+      _isProcessing = true;
+      try {
+        final pitch = await _pitchDetector.getPitch(frame);
+        if (pitch > 0 && !_pitchController.isClosed) {
+          _pitchController.add(pitch);
+        }
+      } finally {
+        _isProcessing = false;
+      }
+    });
+
+    _audioController = StreamController<Uint8List>();
+    _audioSubscription = _audioController!.stream.listen(_onAudioData);
+    _positionBroadcast = _player.onProgress!
+        .map((e) => e.position)
+        .asBroadcastStream();
+    await Future.wait([
+      _player.startPlayer(
+        fromURI: _loadedFilePath!,
+        codec: Codec.mp3,
+        whenFinished: _onPlaybackFinished,
+      ),
+      _recorder.startRecorder(
+        codec: Codec.pcm16,
+        sampleRate: 44100,
+        numChannels: 1,
+        toStream: _audioController!.sink,
+      ),
+    ]);
+    _isRecording = true;
+  }
+  Future<void> pause() async {
+    if (_player.isPlaying) await _player.pausePlayer();
+  }
+
+  Future<void> resume() async {
+    if (_player.isPaused) await _player.resumePlayer();
+  }
+
+  Future<void> stop() async {
+    _isRecording = false;
+    _isProcessing = false;
+    _sampleAccumulator.clear();
+    await _queueSubscription?.cancel();
+    await _pitchDetector.dispose();
+
+    if (_recorder.isRecording || _recorder.isPaused) {
+      await _recorder.stopRecorder();
+    }
+    await _recorder.closeRecorder();
+
+    await _audioSubscription?.cancel();
+    if (_audioController != null && !_audioController!.isClosed) {
+      await _audioController!.close();
+      _audioController = null;
+    }
+
+    if (_player.isPlaying || _player.isPaused) {
+      await _player.stopPlayer();
+    }
+    await _player.closePlayer();
+  }
+
+  Future<void> dispose() async {
+    await stop();
+    if (!_pitchController.isClosed) await _pitchController.close();
+    if (!_completeController.isClosed) await _completeController.close();
+    if (!_frameQueue.isClosed) await _frameQueue.close();
+  }
+
+  void _onPlaybackFinished() {
+    _isRecording = false;
+    if (!_completeController.isClosed) {
+      _completeController.add(null);
+    }
+  }
+
+  void _onAudioData(Uint8List buffer) {
+    if (!_isRecording) return;
+
+    _sampleAccumulator.addAll(buffer);
+
+    while (_sampleAccumulator.length >= _requiredBytes) {
+      final frame = Uint8List.fromList(
+        _sampleAccumulator.sublist(0, _requiredBytes),
+      );
+      _sampleAccumulator.removeRange(0, _requiredBytes);
+
+      if (!_frameQueue.isClosed) {
+        _frameQueue.add(frame);
+      }
+    }
+  }
+}

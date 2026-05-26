@@ -26,14 +26,6 @@ class PerformanceKaraokeBloc
     required this.dio,
     required this.karaokeAudioRepository,
   }) : super(InitialKaraoke()) {
-    _playbackSubscription = karaokeAudioRepository.playbackProgressStream.listen((ms) {
-      add(UpdatePlaybackTime(ms));
-    });
-
-    _pitchSubscription = karaokeAudioRepository.pitchStream.listen((pitchHz) {
-      add(UpdateUserPitch(pitchHz));
-    });
-
     on<LoadPerformance>(_onLoadPerformance);
     on<UpdatePlaybackTime>(_onUpdatePlaybackTime);
     on<UpdateUserPitch>(_onUpdateUserPitch);
@@ -41,7 +33,33 @@ class PerformanceKaraokeBloc
     on<ResumeKaraoke>(_onResumeKaraoke);
   }
 
+  void _startSubscriptions() {
+    DateTime lastPitchTime = DateTime.now();
+    double lastPitch = 0.0;
+
+    _playbackSubscription = karaokeAudioRepository.playbackProgressStream.listen((ms) {
+      if (!isClosed) add(UpdatePlaybackTime(ms));
+    });
+
+    _pitchSubscription = karaokeAudioRepository.pitchStream.listen((pitchHz) {
+      if (isClosed) return;
+
+      final now = DateTime.now();
+      final currentState = state;
+      if (currentState is! LoadedKaraoke) return;
+
+      if (now.difference(lastPitchTime).inMilliseconds > 50 ||
+          (pitchHz - lastPitch).abs() > 1.0) {
+        lastPitchTime = now;
+        lastPitch = pitchHz;
+        add(UpdateUserPitch(pitchHz));
+      }
+    });
+  }
+
   Future<void> _onLoadPerformance(LoadPerformance event, Emitter emit) async {
+    await _pitchSubscription?.cancel();
+    await _playbackSubscription?.cancel();
     emit(LoadingKaraoke());
     try {
       final lesson = await repository.getDetailPerformance(event.id);
@@ -57,6 +75,8 @@ class PerformanceKaraokeBloc
         final song = parse.parse(midiBytes);
         emit(LoadedKaraoke(lesson: lesson, song: song));
         await karaokeAudioRepository.start(lesson.karaokeLink);
+        if (isClosed) return;
+        _startSubscriptions();
       } else {
         throw Exception("Không thể tải nhạc. Mã lỗi ${response.statusCode}");
       }
@@ -101,6 +121,8 @@ class PerformanceKaraokeBloc
   Future<void> close() async {
     await _pitchSubscription?.cancel();
     await _playbackSubscription?.cancel();
+    _pitchSubscription = null;
+    _playbackSubscription = null;
     await karaokeAudioRepository.stop();
     return super.close();
   }

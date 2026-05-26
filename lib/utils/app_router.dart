@@ -30,6 +30,8 @@ import '../presentation/lesson_question_result/screen/lesson_result_screen.dart'
 import '../presentation/login/bloc/login_bloc.dart';
 import '../presentation/login/screen/phone_number_send_otp.dart';
 import '../presentation/login/screen/verify_otp_screen.dart';
+import '../presentation/practices_details/screen/practices_details_screen.dart';
+import '../presentation/practices_results/screen/practices_results_screen.dart';
 import '../presentation/profile/bloc/profile_bloc.dart';
 import '../presentation/setting/screen/setting_screen.dart';
 
@@ -278,6 +280,32 @@ class AppRouter {
           child: CancelAccountScreen(),
           transitionsBuilder: AppTransitions.slideFromRight,
         ),
+      ),
+      GoRoute(
+        path: '/practices/:id',
+        pageBuilder: (context, state) {
+          final id = state.pathParameters['id']!;
+          return CustomTransitionPage(
+            key: state.pageKey,
+            child: PracticesDetailsScreen(id: id),
+            transitionsBuilder: AppTransitions.slideFromRight,
+          );
+        },
+      ),
+      GoRoute(
+        path: '/practices/:id/result',
+        pageBuilder: (context, state) {
+          final extra = state.extra as Map<String, dynamic>;
+          return CustomTransitionPage(
+            key: state.pageKey,
+            child: PracticesResultsScreen(
+              score: extra['score'] as int,
+              practicesPart: extra['practices'] as PracticesPart,
+              status: extra['status'] as String,
+            ),
+            transitionsBuilder: AppTransitions.slideFromRight,
+          );
+        },
       ),
     ],
   );

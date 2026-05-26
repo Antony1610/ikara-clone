@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_svg/svg.dart';
+import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:ikara_clone/constants/constants.dart';
 import 'package:ikara_clone/data/model/model.dart';
@@ -173,7 +174,7 @@ class _PracticesCardState extends State<_PracticesCard> {
   }
 
   void _onStart(BuildContext context) {
-    // TODO: navigate
+    context.push('/practices/${widget.part.indexId}');
   }
 }
 

@@ -154,7 +154,7 @@ class KarParser {
           }
 
           final bool isNewVerse = text.startsWith('\\');
-          final bool isNewLine = text.startsWith('/');
+          final bool isNewLine = text.  startsWith('/');
           String cleanText = (isNewVerse || isNewLine) ? text.substring(1) : text;
           cleanText = cleanText.replaceAll(RegExp(r'[^\p{L}\p{N}\p{P}\p{Z}]', unicode: true), '');
           if (cleanText.trim().isNotEmpty) {

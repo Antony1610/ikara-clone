@@ -59,7 +59,7 @@ dependencies:
   flutter_launcher_icons: ^0.14.4
   pinput: ^6.0.2
   image_picker: ^1.2.2
-  pitch_detector_dart: ^0.0.7
+  rxdart: ^0.28.0
 
 flutter_launcher_icons:
   android: true
@@ -93,7 +93,8 @@ flutter:
     - assets/rhythms/
     - assets/practices/
     - assets/logo.png
-
+    - assets/assets_data/Archive/
+    - assets/assets_data/Practices/
   # To add assets to your application, add an assets section, like this:
   # assets:
   #   - images/a_dot_burr.jpeg

@@ -240,7 +240,7 @@ class _PerformanceKaraokeScreenState extends State<PerformanceKaraokeScreen> {
           return Column(
             children: [
               Expanded(
-                flex: 3,
+                flex: 4,
                 child: Container(
                   margin: const EdgeInsets.only(top: 80),
                   child: RepaintBoundary(

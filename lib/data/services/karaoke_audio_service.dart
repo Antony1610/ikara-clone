@@ -1,31 +1,30 @@
 import 'dart:async';
 import 'dart:typed_data';
+
+import 'package:flutter/foundation.dart';
 import 'package:flutter_sound/flutter_sound.dart';
+import 'package:ikara_clone/data/services/pitch_detector_service.dart';
 import 'package:permission_handler/permission_handler.dart';
-import 'package:pitch_detector_dart/pitch_detector.dart';
 
 class KaraokeAudioService {
   final FlutterSoundRecorder _recorder = FlutterSoundRecorder();
   final FlutterSoundPlayer _player = FlutterSoundPlayer();
+
   final _pitchController = StreamController<double>.broadcast();
   final _playbackProgressController = StreamController<int>.broadcast();
+
+  final _pitchDetector = PitchDetectorService();
   late StreamController<Uint8List> _audioController;
-  late final PitchDetector _pitchDetector;
   StreamSubscription? _subscription;
-  final List<int> _pcmBuffer = [];
+
   Stream<double> get pitchStream => _pitchController.stream;
   Stream<int> get playbackProgressStream => _playbackProgressController.stream;
-  bool _isRecording = false;
 
-  static const int _sampleRate = 44100;
-  static const int _bufferSize = 2048;
-  static const int _requiredBytes = _bufferSize * 4; // stereo 16 bit
-  KaraokeAudioService() {
-    _pitchDetector = PitchDetector(
-      audioSampleRate: _sampleRate.toDouble(),
-      bufferSize: _bufferSize,
-    );
-  }
+  final List<int> _sampleAccumulator = [];
+  static const int _requiredSamples = 1024;
+  static const int _requiredBytes = _requiredSamples * 2;
+  bool _isRecording = false;
+  bool _processing = false;
 
   Future<bool> _requestMicPermission() async {
     final status = await Permission.microphone.request();
@@ -34,12 +33,19 @@ class KaraokeAudioService {
 
   Future<void> start(String audioUrl) async {
     if (_isRecording) await stop();
+
+    await _pitchDetector.initialize(
+      sampleRate: 44100.0,
+      bufferSize: 1024,
+      threshold: 0.15,
+    );
+
     final granted = await _requestMicPermission();
     if (!granted) throw Exception("Microphone permission denied");
 
     await _player.openPlayer();
-    await _player.setSubscriptionDuration(const Duration(milliseconds: 50));
-    _player.onProgress!.listen((event) {
+    await _player.setSubscriptionDuration(const Duration(milliseconds: 40));
+    _player.onProgress?.listen((event) {
       _playbackProgressController.add(event.position.inMilliseconds);
     });
     await _player.startPlayer(codec: Codec.mp3, fromURI: audioUrl);
@@ -51,53 +57,59 @@ class KaraokeAudioService {
 
     await _recorder.startRecorder(
       codec: Codec.pcm16,
-      sampleRate: _sampleRate,
-      numChannels: 2,
+      sampleRate: 44100,
+      numChannels: 1,
       toStream: _audioController.sink,
     );
   }
 
+  void _onAudioData(Uint8List buffer) {
+    if (!_isRecording) return;
+
+    _sampleAccumulator.addAll(buffer);
+
+    debugPrint(
+      '[Audio] Accumulator: ${_sampleAccumulator.length}/$_requiredSamples samples',
+    );
+
+
+    while (_sampleAccumulator.length >= _requiredSamples) {
+      if (_processing) {
+        break;
+      }
+
+      final samples = Uint8List.fromList(_sampleAccumulator.sublist(0, _requiredBytes));
+      _sampleAccumulator.removeRange(0, _requiredSamples);
+
+      double avg = samples.map((e) => e.abs()).reduce((a, b) => a + b) / samples.length;
+      debugPrint("Amplitude: $avg");
+      _processing = true;
+      _pitchDetector
+          .getPitch(samples)
+          .then((pitch) {
+            debugPrint('[Pitch] Kết quả: ${pitch.toStringAsFixed(2)} Hz');
+            if (pitch > 60) {
+              _pitchController.add(double.parse(pitch.toStringAsFixed(1)));
+            }
+          })
+          .whenComplete(() => _processing = false);
+    }
+  }
+
   Future<void> stop() async {
     _isRecording = false;
+    _sampleAccumulator.clear();
+
+    await _pitchDetector.dispose();
     if (_recorder.isRecording) await _recorder.stopRecorder();
     await _recorder.closeRecorder();
-    if (_player.isPlaying) await _player.stopPlayer();
+    if (_player.isPlaying || _player.isPaused) await _player.stopPlayer();
     await _player.closePlayer();
+
     await _subscription?.cancel();
     await _audioController.close();
   }
 
-  void _onAudioData(dynamic buffer) {
-    if (!_isRecording || buffer is! Uint8List) return;
-    _pcmBuffer.addAll(buffer);
-    while (_pcmBuffer.length >= _requiredBytes) {
-      final chunk = Uint8List.fromList(_pcmBuffer.sublist(0, _requiredBytes));
-      _pcmBuffer.removeRange(0, _requiredBytes);
-      final mono = _stereoToMono(chunk); // Pitch detector chỉ xử lý 1 kênh
-      _detectPitch(mono);
-    }
-  }
-
-  Future<void> _detectPitch(Uint8List mono) async {
-    if (!_isRecording) return;
-    final result = await _pitchDetector.getPitchFromIntBuffer(mono);
-    if (result.pitched && result.pitch >= 50 && result.pitch <= 1050) {
-      _pitchController.add(result.pitch);
-    }
-  }
-
-  // Stereo to Mono
-  Uint8List _stereoToMono(Uint8List stereoBytes){
-    final byteData = ByteData.sublistView(stereoBytes);
-    final monoBytes = ByteData(_bufferSize * 2);
-    for (int i = 0, j = 0; i < stereoBytes.length; i+=4, j+=2) {
-      final left = byteData.getInt16(i, Endian.little);
-      final right = byteData.getInt16(i+2, Endian.little);
-      final mono = (left + right) ~/ 2;
-      monoBytes.setInt16(j, mono, Endian.little);
-    }
-    return monoBytes.buffer.asUint8List();
-  }
   Future<void> pause() async {
     if (_player.isPlaying) await _player.pausePlayer();
   }

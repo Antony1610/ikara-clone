@@ -18,26 +18,40 @@ class KaraokeLyricsWidget extends StatefulWidget {
 }
 
 class _KaraokeLyricsWidgetState extends State<KaraokeLyricsWidget> {
-  // Tìm index của từ đang hát dựa trên thời gian thực tế
-  int _activeIndex() {
-    if (widget.tokens.isEmpty) return -1;
-    int result = -1;
-    for (int i = 0; i < widget.tokens.length; i++) {
-      if (widget.tokens[i].startMs <= widget.currentMs) {
-        result = i;
-      } else {
-        break;
-      }
-    }
-    return result;
+
+  List<_LyricLine> _cachedLines = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _cachedLines = _buildLines(widget.tokens);
   }
 
-  // Chia danh sách tokens thành các dòng dựa trên isNewLine hoặc isNewVerse
-  List<_LyricLine> _buildLines() {
+  @override
+  void didUpdateWidget(covariant KaraokeLyricsWidget oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // TỐI ƯU 2: Chỉ chạy lại nếu đổi bài hát
+    if (oldWidget.tokens != widget.tokens) {
+      _cachedLines = _buildLines(widget.tokens);
+    }
+  }
+
+  int _activeIndex() {
+    if (widget.tokens.isEmpty) return -1;
+    // TỐI ƯU 3: Tìm kiếm từ cuối lên hoặc Binary Search cho nhanh
+    for (int i = widget.tokens.length - 1; i >= 0; i--) {
+      if (widget.tokens[i].startMs <= widget.currentMs) {
+        return i;
+      }
+    }
+    return -1;
+  }
+
+  List<_LyricLine> _buildLines(List<LyricsToken> tokens) {
     final List<_LyricLine> lines = [];
     _LyricLine current = _LyricLine();
-    for (int i = 0; i < widget.tokens.length; i++) {
-      final t = widget.tokens[i];
+    for (int i = 0; i < tokens.length; i++) {
+      final t = tokens[i];
       if ((t.isNewVerse || t.isNewLine) && current.tokens.isNotEmpty) {
         lines.add(current);
         current = _LyricLine();
@@ -50,22 +64,21 @@ class _KaraokeLyricsWidgetState extends State<KaraokeLyricsWidget> {
 
   @override
   Widget build(BuildContext context) {
-    if (widget.tokens.isEmpty) return const SizedBox.shrink();
+    if (widget.tokens.isEmpty || _cachedLines.isEmpty) return const SizedBox.shrink();
 
     final activeIdx = _activeIndex();
-    final lines = _buildLines();
 
     // Tìm dòng hiện tại chứa từ đang hát
     int activeLineIdx = 0;
-    for (int l = 0; l < lines.length; l++) {
-      if (lines[l].tokens.any((e) => e.key == activeIdx)) {
+    for (int l = 0; l < _cachedLines.length; l++) {
+      if (_cachedLines[l].tokens.any((e) => e.key == activeIdx)) {
         activeLineIdx = l;
         break;
       }
     }
 
-    final line1 = activeLineIdx < lines.length ? lines[activeLineIdx] : null;
-    final line2 = activeLineIdx + 1 < lines.length ? lines[activeLineIdx + 1] : null;
+    final line1 = activeLineIdx < _cachedLines.length ? _cachedLines[activeLineIdx] : null;
+    final line2 = activeLineIdx + 1 < _cachedLines.length ? _cachedLines[activeLineIdx + 1] : null;
 
     return Column(
       mainAxisAlignment: MainAxisAlignment.center,
