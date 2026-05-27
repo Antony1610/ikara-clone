@@ -52,7 +52,7 @@ class PracticesAudioService {
       _pitchDetector.initialize(
         sampleRate: 44100,
         bufferSize: _requiredSamples,
-        threshold: 0.15,
+        threshold: 0.2,
       ),
       _requestMicPermission().then((granted) {
         if (!granted) throw Exception('Microphone permission denied');

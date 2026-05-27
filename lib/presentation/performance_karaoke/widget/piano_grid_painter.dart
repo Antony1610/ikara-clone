@@ -89,16 +89,18 @@ class _AnimatedPianoGridState extends State<AnimatedPianoGrid>
 
   @override
   Widget build(BuildContext context) {
-    return CustomPaint(
-      size: Size.infinite,
-      painter: PianoGridPainter(
-        notes: widget.notes,
-        smoothMsListenable: _smoothMsNotifier,
-        userPitchHz: widget.userPitchHz,
-        hitDurations: widget.hitDurations,
-        minPitch: widget.minPitch,
-        maxPitch: widget.maxPitch,
-        pxPerms: widget.pxPerms,
+    return RepaintBoundary(
+      child: CustomPaint(
+        size: Size.infinite,
+        painter: PianoGridPainter(
+          notes: widget.notes,
+          smoothMsListenable: _smoothMsNotifier,
+          userPitchHz: widget.userPitchHz,
+          hitDurations: widget.hitDurations,
+          minPitch: widget.minPitch,
+          maxPitch: widget.maxPitch,
+          pxPerms: widget.pxPerms,
+        ),
       ),
     );
   }

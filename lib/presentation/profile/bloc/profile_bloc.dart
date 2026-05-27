@@ -59,7 +59,7 @@ class ProfileBloc extends Bloc<ProfileEvent, ProfileState>{
 
       final updatedUser = user.copyWith(
         name: event.name,
-        status: event.status.isEmpty ? null : event.status,
+        status: event.status,
         lastNameChangedAt: event.name != user.name
             ? DateTime.now()
             : user.lastNameChangedAt,

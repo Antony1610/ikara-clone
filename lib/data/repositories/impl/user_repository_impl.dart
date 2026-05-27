@@ -31,7 +31,7 @@ class UserRepositoryImpl implements UserRepository {
 
   @override
   Future<void> updateUser(AppUser user) async {
-    await _userService.updateAtPath('users/$user.id', user.toJson());
+    await _userService.updateAtPath('users/${user.id}', user.toJson());
   }
 
   @override

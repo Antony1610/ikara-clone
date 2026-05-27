@@ -59,7 +59,6 @@ class FastYinDetector(
         for (j in 0 until bufferSize) {
             audioBufferFFT[2 * j] = audioBuffer[j]
         }
-        // phần còn lại [2*bufferSize .. 4*bufferSize-1] = 0 đã fill
         fft(audioBufferFFT, false)
 
         // Kernel: reversed halfSize + zero-pad đến fftSize
@@ -137,6 +136,8 @@ class FastYinDetector(
         }
     }
 
+
+    // Cooley-Tukey FFT
     private fun fft(data: FloatArray, invert: Boolean) {
         val n = data.size / 2  // số complex samples
 

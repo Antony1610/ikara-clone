@@ -340,52 +340,33 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 ),
               ),
               const SizedBox(height: 8),
-              ValueListenableBuilder(
-                valueListenable: _statusController,
-                builder: (context, value, _) {
-                  return TextField(
-                    controller: _statusController,
-                    maxLines: 3,
-                    maxLength: 80,
-                    style: TextStyle(
-                      fontWeight: FontWeight.w400,
-                      fontFamily: 'Roboto',
-                      fontSize: 14,
-                      color: AppColors.primaryText,
-                    ),
-                    decoration: InputDecoration(
-                      hintText: (user.status ?? '').isEmpty
-                          ? 'Nhập trạng thái...'
-                          : null,
-                      hintStyle: TextStyle(
-                        color: AppColors.primaryText,
-                        fontSize: 14,
-                        fontFamily: 'Roboto',
-                        fontWeight: FontWeight.w400,
-                      ),
-                      filled: true,
-                      fillColor: AppColors.whiteBackground.withValues(
-                        alpha: 0.2,
-                      ),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(15),
-                        borderSide: BorderSide.none,
-                      ),
-                      contentPadding: EdgeInsets.symmetric(
-                        horizontal: 13,
-                        vertical: 15,
-                      ),
-                      counterText: '${value.text.length}/80',
-                      counterStyle: TextStyle(
-                        fontFamily: 'Roboto',
-                        color: AppColors.hintText,
-                        fontWeight: FontWeight.w400,
-                        fontSize: 12,
-                      ),
-                    ),
-                  );
-                },
-              ),
+              TextField(
+                controller: _statusController,
+                maxLines: 3,
+                maxLength: 80,
+                style: TextStyle(
+                  fontWeight: FontWeight.w400,
+                  fontFamily: 'Roboto',
+                  fontSize: 14,
+                  color: AppColors.primaryText,
+                ),
+                decoration: InputDecoration(
+                  hintText: (user.status ?? '').isEmpty ? 'Nhập trạng thái...' : null,
+                  hintStyle: TextStyle(
+                    color: AppColors.primaryText,
+                    fontSize: 14,
+                    fontFamily: 'Roboto',
+                    fontWeight: FontWeight.w400,
+                  ),
+                  filled: true,
+                  fillColor: AppColors.whiteBackground.withValues(alpha: 0.2),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(15),
+                    borderSide: BorderSide.none,
+                  ),
+                  contentPadding: EdgeInsets.symmetric(horizontal: 13, vertical: 15),
+                ),
+              )
             ],
           ),
         ),

@@ -26,6 +26,7 @@ class PracticesDetailsBloc
   StreamSubscription? _completeSub;
   double _latestPitch = 0.0;
   int _lastMs = 0;
+  bool _isComplete = false;
   PracticesDetailsBloc(
     this._practicesRepository,
     this._midiParseRepository,
@@ -52,7 +53,7 @@ class PracticesDetailsBloc
         'assets/assets_data/Archive/${practices!.midiUrl}',
       );
       await _audioRepository.load(practices.mp3Url);
-
+      _isComplete = false;
       emit(
         LoadedPractices(
           notes: notes,
@@ -125,17 +126,21 @@ class PracticesDetailsBloc
   }
 
   void _onUpdatePitch(UpdatePitch event, Emitter emit) {
+    if (_isComplete) return;
     _latestPitch = event.userPitchHz;
     final s = state;
     if (s is! LoadedPractices) return;
+    if (!s.isPlaying) return;
     debugPrint('UserPitchHz: $_latestPitch');
     emit(s.copyWith(userPitchHz: _latestPitch));
   }
 
   void _onUpdatePosition(UpdatePosition event, Emitter emit) {
+    if (_isComplete) return;
+
     final s = state;
     if (s is! LoadedPractices) return;
-
+    if (!s.isPlaying) return;
     final currentTimeMs = event.currentMs;
 
     int delta = currentTimeMs - _lastMs;
@@ -145,6 +150,7 @@ class PracticesDetailsBloc
       final lastNote = s.notes.last;
       final endMs = lastNote.startMs + lastNote.durationMs;
       if (currentTimeMs >= endMs) {
+        _isComplete = true;
         add(CompletePractices());
         return;
       }
@@ -193,6 +199,7 @@ class PracticesDetailsBloc
   ) async {
     final s = state;
     if (s is! LoadedPractices) return;
+    _isComplete = true;
     await _cancelSubscription();
     await _audioRepository.stop();
 

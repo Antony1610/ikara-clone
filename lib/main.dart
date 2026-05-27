@@ -117,7 +117,6 @@ class MyApp extends StatelessWidget {
           ),
         ),
         RepositoryProvider<MidiParseRepository>(create: (context) => MidiParseRepositoryImpl()),
-        RepositoryProvider<PracticesRepository>(create: (context) => PracticesRepositoryImpl(context.read<FirebaseService>()))
       ],
       child: MultiBlocProvider(
         providers: [

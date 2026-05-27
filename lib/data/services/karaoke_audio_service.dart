@@ -23,7 +23,7 @@ class KaraokeAudioService {
   static const int _requiredSamples = 1024;
   static const int _requiredBytes = _requiredSamples * 2;
   bool _isRecording = false;
-  bool _processing = false;
+  bool _isProcessing = false;
 
   Future<bool> _requestMicPermission() async {
     final status = await Permission.microphone.request();
@@ -63,35 +63,24 @@ class KaraokeAudioService {
   }
 
   void _onAudioData(Uint8List buffer) {
-    if (!_isRecording) return;
+    if (!_isRecording || _isProcessing) return;
 
     _sampleAccumulator.addAll(buffer);
 
-    debugPrint(
-      '[Audio] Accumulator: ${_sampleAccumulator.length}/$_requiredSamples samples',
-    );
+    while (_sampleAccumulator.length >= _requiredBytes) {
+      final frame = Uint8List.fromList(
+        _sampleAccumulator.sublist(0, _requiredBytes),
+      );
+      _sampleAccumulator.removeRange(0, _requiredBytes);
 
+      _isProcessing = true;
+      _pitchDetector.getPitch(frame).then((pitch) {
+        if (pitch > 0 && !_pitchController.isClosed) {
+          _pitchController.add(pitch);
+        }
+      }).whenComplete(() => _isProcessing = false);
 
-    while (_sampleAccumulator.length >= _requiredSamples) {
-      if (_processing) {
-        break;
-      }
-
-      final samples = Uint8List.fromList(_sampleAccumulator.sublist(0, _requiredBytes));
-      _sampleAccumulator.removeRange(0, _requiredSamples);
-
-      double avg = samples.map((e) => e.abs()).reduce((a, b) => a + b) / samples.length;
-      debugPrint("Amplitude: $avg");
-      _processing = true;
-      _pitchDetector
-          .getPitch(samples)
-          .then((pitch) {
-            debugPrint('[Pitch] Kết quả: ${pitch.toStringAsFixed(2)} Hz');
-            if (pitch > 60) {
-              _pitchController.add(double.parse(pitch.toStringAsFixed(1)));
-            }
-          })
-          .whenComplete(() => _processing = false);
+      break;
     }
   }
 
