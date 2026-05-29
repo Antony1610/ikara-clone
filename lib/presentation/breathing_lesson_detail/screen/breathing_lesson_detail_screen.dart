@@ -8,15 +8,57 @@ import 'package:ikara_clone/data/repositories/breaths_repository.dart';
 import 'package:ikara_clone/data/repositories/user_repository.dart';
 import 'package:ikara_clone/presentation/breathing_lesson_detail/bloc/breathing_lesson_detail_bloc.dart';
 
-const _dialogTitleStyle = TextStyle(fontFamily: 'Roboto', fontWeight: FontWeight.w700, fontSize: 12);
-const _dialogCancelStyle = TextStyle(fontFamily: 'Roboto', color: AppColors.lockText, fontWeight: FontWeight.w500, fontSize: 12);
-const _dialogConfirmStyle = TextStyle(fontFamily: 'Roboto', color: AppColors.buttonInsideLesson, fontWeight: FontWeight.w500, fontSize: 12);
-const _appBarTitleStyle = TextStyle(fontFamily: 'Roboto', color: AppColors.primaryText, fontWeight: FontWeight.w700, fontSize: 16);
-const _timerStyle = TextStyle(fontFamily: 'Roboto', fontSize: 24, fontWeight: FontWeight.w700, color: AppColors.primaryText);
-const _richTextBaseStyle = TextStyle(fontFamily: 'Roboto', fontSize: 16, color: AppColors.primaryText, fontWeight: FontWeight.w700);
-const _richTextAccentStyle = TextStyle(fontFamily: 'Roboto', color: AppColors.progressColor);
-const _buttonTextStyle = TextStyle(fontFamily: 'Roboto', color: AppColors.primaryText, fontSize: 16, fontWeight: FontWeight.w600);
-const _volumeLabelStyle = TextStyle(fontFamily: 'Roboto', fontSize: 14, fontWeight: FontWeight.w500, color: AppColors.primaryText);
+const _dialogTitleStyle = TextStyle(
+  fontFamily: 'Roboto',
+  fontWeight: FontWeight.w700,
+  fontSize: 12,
+);
+const _dialogCancelStyle = TextStyle(
+  fontFamily: 'Roboto',
+  color: AppColors.lockText,
+  fontWeight: FontWeight.w500,
+  fontSize: 12,
+);
+const _dialogConfirmStyle = TextStyle(
+  fontFamily: 'Roboto',
+  color: AppColors.buttonInsideLesson,
+  fontWeight: FontWeight.w500,
+  fontSize: 12,
+);
+const _appBarTitleStyle = TextStyle(
+  fontFamily: 'Roboto',
+  color: AppColors.primaryText,
+  fontWeight: FontWeight.w700,
+  fontSize: 16,
+);
+const _timerStyle = TextStyle(
+  fontFamily: 'Roboto',
+  fontSize: 24,
+  fontWeight: FontWeight.w700,
+  color: AppColors.primaryText,
+);
+const _richTextBaseStyle = TextStyle(
+  fontFamily: 'Roboto',
+  fontSize: 16,
+  color: AppColors.primaryText,
+  fontWeight: FontWeight.w700,
+);
+const _richTextAccentStyle = TextStyle(
+  fontFamily: 'Roboto',
+  color: AppColors.progressColor,
+);
+const _buttonTextStyle = TextStyle(
+  fontFamily: 'Roboto',
+  color: AppColors.primaryText,
+  fontSize: 16,
+  fontWeight: FontWeight.w600,
+);
+const _volumeLabelStyle = TextStyle(
+  fontFamily: 'Roboto',
+  fontSize: 14,
+  fontWeight: FontWeight.w500,
+  color: AppColors.primaryText,
+);
 
 final _buttonStyle = ElevatedButton.styleFrom(
   backgroundColor: AppColors.buttonInsideLesson,
@@ -33,7 +75,8 @@ class BreathingLessonDetailScreen extends StatefulWidget {
       _BreathingLessonDetailScreenState();
 }
 
-class _BreathingLessonDetailScreenState extends State<BreathingLessonDetailScreen> {
+class _BreathingLessonDetailScreenState
+    extends State<BreathingLessonDetailScreen> {
   late final BreathingLessonDetailBloc _bloc;
 
   @override
@@ -43,7 +86,7 @@ class _BreathingLessonDetailScreenState extends State<BreathingLessonDetailScree
       repository: context.read<BreathsRepository>(),
       audioRepository: context.read<AudioRepository>(),
       uid: FirebaseAuth.instance.currentUser!.uid,
-      userRepository: context.read<UserRepository>()
+      userRepository: context.read<UserRepository>(),
     )..add(InitBreathing(widget.id));
   }
 
@@ -55,10 +98,7 @@ class _BreathingLessonDetailScreenState extends State<BreathingLessonDetailScree
 
   @override
   Widget build(BuildContext context) {
-    return BlocProvider.value(
-      value: _bloc,
-      child: const _LessonDetailView(),
-    );
+    return BlocProvider.value(value: _bloc, child: const _LessonDetailView());
   }
 }
 
@@ -74,7 +114,11 @@ class _LessonDetailViewState extends State<_LessonDetailView> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        content: Text('Bạn chắc chắn muốn hủy bài không?', style: _dialogTitleStyle, textAlign: TextAlign.center,),
+        content: Text(
+          'Bạn chắc chắn muốn hủy bài không?',
+          style: _dialogTitleStyle,
+          textAlign: TextAlign.center,
+        ),
         actions: [
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceAround,
@@ -102,12 +146,15 @@ class _LessonDetailViewState extends State<_LessonDetailView> {
         if (state is DetailCompleted) {
           WidgetsBinding.instance.addPostFrameCallback((_) {
             if (!mounted) return;
-            context.go('/breathing-result', extra: {
-              'id': state.id,
-              'score': state.score,
-              'type': state.type,
-              'duration': state.duration,
-            });
+            context.go(
+              '/breathing-result',
+              extra: {
+                'id': state.id,
+                'score': state.score,
+                'type': state.type,
+                'duration': state.duration,
+              },
+            );
           });
         }
       },
@@ -116,37 +163,40 @@ class _LessonDetailViewState extends State<_LessonDetailView> {
           extendBodyBehindAppBar: true,
           appBar: state is DetailLoaded
               ? AnimatedAppBar(
-            appBar: AppBar(
-              leading: IconButton(
-                onPressed: () async {
-                  final bloc = context.read<BreathingLessonDetailBloc>();
-                  final currentState = bloc.state;
-                  if (currentState is DetailLoaded && currentState.isRecording) {
-                    final shouldExit = await _showExitDialog();
-                    if (shouldExit) {
-                      bloc.add(StopBreathing());
-                      if (context.mounted) context.go('/breathing');
-                    }
-                  } else {
-                    context.go('/breathing');
-                  }
-                },
-                icon: const Icon(Icons.arrow_back_ios),
-              ),
-              title: Text(
-                'Tập thở với ${state.breathsPart.type}',
-                style: _appBarTitleStyle,
-                maxLines: 2,
-                textAlign: TextAlign.center,
-              ),
-              centerTitle: true,
-              automaticallyImplyLeading: false,
-              iconTheme: const IconThemeData(color: AppColors.primaryText),
-              titleSpacing: 0,
-              backgroundColor: Colors.transparent,
-              elevation: 0,
-            ),
-          )
+                  appBar: AppBar(
+                    leading: IconButton(
+                      onPressed: () async {
+                        final bloc = context.read<BreathingLessonDetailBloc>();
+                        final currentState = bloc.state;
+                        if (currentState is DetailLoaded &&
+                            currentState.isRecording) {
+                          final shouldExit = await _showExitDialog();
+                          if (shouldExit) {
+                            bloc.add(StopBreathing());
+                            if (context.mounted) context.go('/breathing');
+                          }
+                        } else {
+                          context.go('/breathing');
+                        }
+                      },
+                      icon: const Icon(Icons.arrow_back_ios),
+                    ),
+                    title: Text(
+                      'Tập thở với ${state.breathsPart.type}',
+                      style: _appBarTitleStyle,
+                      maxLines: 2,
+                      textAlign: TextAlign.center,
+                    ),
+                    centerTitle: true,
+                    automaticallyImplyLeading: false,
+                    iconTheme: const IconThemeData(
+                      color: AppColors.primaryText,
+                    ),
+                    titleSpacing: 0,
+                    backgroundColor: Colors.transparent,
+                    elevation: 0,
+                  ),
+                )
               : null,
           body: _buildBody(context, state),
         );
@@ -166,8 +216,11 @@ class _LessonDetailViewState extends State<_LessonDetailView> {
         ),
       ),
       child: switch (state) {
-        DetailInitial() || DetailLoading() => const Center(child: CircularProgressIndicator()),
-        DetailError() => Center(child: Text(state.message, style: const TextStyle(color: Colors.red))),
+        DetailInitial() ||
+        DetailLoading() => const Center(child: CircularProgressIndicator()),
+        DetailError() => Center(
+          child: Text(state.message, style: const TextStyle(color: Colors.red)),
+        ),
         DetailLoaded() => _buildLoadedUI(context, state),
         DetailCompleted() => const Center(child: CircularProgressIndicator()),
       },
@@ -204,7 +257,9 @@ class _LessonDetailViewState extends State<_LessonDetailView> {
                             strokeWidth: 8,
                             strokeCap: StrokeCap.round,
                             backgroundColor: Colors.white24,
-                            valueColor: const AlwaysStoppedAnimation(AppColors.primaryText),
+                            valueColor: const AlwaysStoppedAnimation(
+                              AppColors.primaryText,
+                            ),
                           );
                         },
                       ),
@@ -256,15 +311,17 @@ class _LessonDetailViewState extends State<_LessonDetailView> {
       child: state.isRecording
           ? const SizedBox()
           : SizedBox(
-        key: const ValueKey('start_button'),
-        width: double.infinity,
-        height: 50,
-        child: ElevatedButton(
-          style: _buttonStyle,
-          onPressed: () => context.read<BreathingLessonDetailBloc>().add(StartBreathing()),
-          child: const Text('Bắt đầu', style: _buttonTextStyle),
-        ),
-      ),
+              key: const ValueKey('start_button'),
+              width: double.infinity,
+              height: 50,
+              child: ElevatedButton(
+                style: _buttonStyle,
+                onPressed: () => context.read<BreathingLessonDetailBloc>().add(
+                  StartBreathing(),
+                ),
+                child: const Text('Bắt đầu', style: _buttonTextStyle),
+              ),
+            ),
     );
   }
 }
@@ -304,7 +361,9 @@ class _VolumeBars extends StatelessWidget {
                     width: 54,
                     height: _barHeight,
                     decoration: BoxDecoration(
-                      color: isActive ? AppColors.progressColor : Colors.white24,
+                      color: isActive
+                          ? AppColors.progressColor
+                          : Colors.white24,
                       borderRadius: BorderRadius.circular(3),
                     ),
                   );
@@ -312,7 +371,11 @@ class _VolumeBars extends StatelessWidget {
               ),
               Positioned(
                 bottom: thresholdRatio * totalHeight,
-                child: Container(width: 54, height: 3, color: AppColors.progressColor),
+                child: Container(
+                  width: 54,
+                  height: 3,
+                  color: AppColors.progressColor,
+                ),
               ),
             ],
           ),

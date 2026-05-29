@@ -1,3 +1,6 @@
+import 'dart:async';
+
+import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:ikara_clone/base/blocs/auth/auth_bloc.dart';
@@ -11,6 +14,7 @@ import 'package:ikara_clone/presentation/lesson/screen/lesson_page_screen.dart';
 import 'package:ikara_clone/presentation/login/screen/login_screen.dart';
 import 'package:ikara_clone/presentation/performance_detail/screen/performance_detail_screen.dart';
 import 'package:ikara_clone/presentation/performance_karaoke/screen/performance_karaoke_screen.dart';
+import 'package:ikara_clone/presentation/performance_results/screen/performance_results_screen.dart';
 import 'package:ikara_clone/presentation/performances/screen/performance_screen.dart';
 import 'package:ikara_clone/presentation/practices/screen/practices_screen.dart';
 import 'package:ikara_clone/presentation/profile/screen/profile_screen.dart';
@@ -36,8 +40,28 @@ import '../presentation/profile/bloc/profile_bloc.dart';
 import '../presentation/setting/screen/setting_screen.dart';
 
 class AppRouter {
-  static final GoRouter router = GoRouter(
-    initialLocation: '/login',
+  static GoRouter router(AuthBloc authBloc, String initialLocation) => GoRouter(
+    initialLocation: initialLocation,
+    refreshListenable: _AuthStateListenable(authBloc),
+    redirect: (context, state) {
+      final authState = authBloc.state;
+      final isLoginRoute =
+          state.matchedLocation == '/login' ||
+          state.matchedLocation == '/phone-login' ||
+          state.matchedLocation == '/verify-otp';
+
+      if (authState is AuthLoading || authState is AuthInitial) return null;
+
+      if (authState is AuthUnauthenticated) {
+        return isLoginRoute ? null : '/login';
+      }
+
+      if (authState is AuthAuthenticated) {
+        return isLoginRoute ? '/lesson' : null;
+      }
+
+      return null;
+    },
     routes: [
       GoRoute(
         path: '/login',
@@ -307,6 +331,31 @@ class AppRouter {
           );
         },
       ),
+      GoRoute(
+        path: '/performance/:id/result',
+        pageBuilder: (context, state) {
+          final extra = state.extra as Map<String, dynamic>;
+          return CustomTransitionPage(
+            key: state.pageKey,
+            child: PerformanceResultsScreen(score: extra['score'] as int),
+            transitionsBuilder: AppTransitions.slideFromRight,
+          );
+        },
+      ),
     ],
   );
+}
+
+class _AuthStateListenable extends ChangeNotifier {
+  late final StreamSubscription _sub;
+
+  _AuthStateListenable(AuthBloc authBloc) {
+    _sub = authBloc.stream.listen((_) => notifyListeners());
+  }
+
+  @override
+  void dispose() {
+    _sub.cancel();
+    super.dispose();
+  }
 }

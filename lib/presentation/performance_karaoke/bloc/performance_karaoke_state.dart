@@ -20,64 +20,68 @@ class ErrorKaraoke extends PerformanceKaraokeState {
 }
 
 class LoadedKaraoke extends PerformanceKaraokeState {
-  final dynamic lesson;
+  final PerformanceLesson lesson;
   final KarSong song;
   final int currentMs;
   final double userPitchHz;
   final int minPitch;
   final int maxPitch;
+  final Map<int, double> hitDuration;
   final bool isPlaying;
-
-  const LoadedKaraoke._({
+  final int totalHitMs;
+  const LoadedKaraoke({
     required this.lesson,
     required this.song,
     required this.currentMs,
     required this.userPitchHz,
     required this.minPitch,
     required this.maxPitch,
+    required this.hitDuration,
     required this.isPlaying,
+    required this.totalHitMs
   });
 
-  factory LoadedKaraoke({
-    required dynamic lesson,
-    required KarSong song,
-    int currentMs = 0,
-    double userPitchHz = 0,
-    bool isPlaying = true,
-  }) {
-    int minP = 40;
-    int maxP = 80;
-    if (song.notes.isNotEmpty) {
-      minP = song.notes.map((n) => n.midiPitch).reduce(min);
-      maxP = song.notes.map((n) => n.midiPitch).reduce(max);
-    }
-    return LoadedKaraoke._(
-      lesson: lesson,
-      song: song,
-      currentMs: currentMs,
-      userPitchHz: userPitchHz,
-      minPitch: minP,
-      maxPitch: maxP,
-      isPlaying: isPlaying,
-    );
-  }
-
   LoadedKaraoke copyWith({
+    PerformanceLesson? lesson,
+    KarSong? song,
     int? currentMs,
     double? userPitchHz,
+    int? minPitch,
+    int? maxPitch,
+    Map<int, double>? hitDuration,
     bool? isPlaying,
+    int? totalHitMs
   }) {
-    return LoadedKaraoke._(
-      lesson: lesson,
-      song: song,
+    return LoadedKaraoke(
+      lesson: lesson ?? this.lesson,
+      song: song ?? this.song,
       currentMs: currentMs ?? this.currentMs,
       userPitchHz: userPitchHz ?? this.userPitchHz,
-      minPitch: minPitch,
-      maxPitch: maxPitch,
+      minPitch: minPitch ?? this.minPitch,
+      maxPitch: maxPitch ?? this.maxPitch,
+      hitDuration: hitDuration ?? this.hitDuration,
       isPlaying: isPlaying ?? this.isPlaying,
+      totalHitMs: totalHitMs ?? this.totalHitMs
     );
   }
 
   @override
-  List<Object?> get props => [lesson, song, currentMs, userPitchHz, isPlaying];
+  List<Object?> get props => [
+    lesson,
+    song,
+    currentMs,
+    userPitchHz,
+    minPitch,
+    maxPitch,
+    hitDuration,
+    isPlaying,
+    totalHitMs
+  ];
+}
+
+class CompletedKaraoke extends PerformanceKaraokeState {
+  final int score;
+  const CompletedKaraoke(this.score);
+  @override
+  List<Object> get props => [score];
 }

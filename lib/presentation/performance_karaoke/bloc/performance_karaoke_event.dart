@@ -19,3 +19,5 @@ class UpdateUserPitch extends PerformanceKaraokeEvent {
 
 class PauseKaraoke extends PerformanceKaraokeEvent {}
 class ResumeKaraoke extends PerformanceKaraokeEvent {}
+
+class CompleteKaraoke extends PerformanceKaraokeEvent {}

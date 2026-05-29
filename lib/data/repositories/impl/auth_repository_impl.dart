@@ -11,21 +11,28 @@ class AuthRepositoryImpl implements AuthRepository {
   AuthRepositoryImpl(this._authService, this._userService);
 
   Future<AppUser> _handleLogin(User user) async {
-    await _userService.createUserIfNotExists(user);
-    final data = await _userService.fetchUser(user.uid);
-    return data != null
-        ? AppUser.fromJson(user.uid, data)
-        : AppUser.fromFirebase(user);
+    try {
+      await _userService.createUserIfNotExists(user);
+      final data = await _userService.fetchUser(user.uid);
+      return data != null
+          ? AppUser.fromJson(user.uid, data)
+          : AppUser.fromFirebase(user);
+    } catch (e) {
+      return AppUser.fromFirebase(user);
+    }
   }
 
   @override
   Stream<AppUser?> get authStateChanges {
     return _authService.authStateChanges.asyncMap((user) async {
       if (user == null) return null;
-      return _handleLogin(user);
+      try {
+        return await _handleLogin(user);
+      } catch (e) {
+        return AppUser.fromFirebase(user);
+      }
     });
   }
-
   @override
   AppUser? get currentUser {
     final user = _authService.currentUser;

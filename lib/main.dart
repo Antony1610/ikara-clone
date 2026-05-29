@@ -1,4 +1,5 @@
 import 'package:dio/dio.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart' as fb;
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -12,17 +13,14 @@ import 'package:ikara_clone/data/repositories/impl/breaths_repository_impl.dart'
 import 'package:ikara_clone/data/repositories/impl/karaoke_audio_repository_impl.dart';
 
 import 'package:ikara_clone/data/repositories/impl/lessons_repository_impl.dart';
-import 'package:ikara_clone/data/repositories/impl/midi_parse_repository_impl.dart';
 import 'package:ikara_clone/data/repositories/impl/performance_repository_impl.dart';
 import 'package:ikara_clone/data/repositories/impl/practices_audio_repository_impl.dart';
 import 'package:ikara_clone/data/repositories/impl/practices_repository_impl.dart';
 import 'package:ikara_clone/data/repositories/impl/rhythms_repository_impl.dart';
 import 'package:ikara_clone/data/repositories/impl/user_repository_impl.dart';
-import 'package:ikara_clone/data/repositories/karaoke_audio_repository.dart';
-import 'package:ikara_clone/data/repositories/lessons_repository.dart';
-import 'package:ikara_clone/data/repositories/midi_parse_repository.dart';
-import 'package:ikara_clone/data/repositories/performance_repository.dart';
 import 'package:ikara_clone/data/repositories/practices_audio_repository.dart';
+import 'package:ikara_clone/data/repositories/lessons_repository.dart';
+import 'package:ikara_clone/data/repositories/performance_repository.dart';
 import 'package:ikara_clone/data/repositories/practices_repository.dart';
 import 'package:ikara_clone/data/repositories/rhythms_repository.dart';
 import 'package:ikara_clone/data/repositories/user_repository.dart';
@@ -38,6 +36,7 @@ import 'package:ikara_clone/presentation/home/bloc/bottom_navigator_bloc.dart';
 import 'package:ikara_clone/utils/app_router.dart';
 
 import 'base/blocs/auth/auth_bloc.dart';
+import 'data/repositories/karaoke_audio_repository.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -45,13 +44,17 @@ void main() async {
   await fb.Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
+
   await AuthService().initialize();
+  final user = await FirebaseAuth.instance.authStateChanges().first;
+  final initialLocation = user != null ? '/lesson' : '/login';
   Bloc.observer = AppBlocObserver();
-  runApp(const MyApp());
+  runApp(MyApp(initialLocation: initialLocation,));
 }
 
 class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+  final String initialLocation;
+  const MyApp({super.key, required this.initialLocation});
 
   @override
   Widget build(BuildContext context) {
@@ -73,7 +76,7 @@ class MyApp extends StatelessWidget {
         ),
         RepositoryProvider<PerformanceRepository>(
           create: (context) =>
-              PerformanceRepositoryImpl(context.read<FirebaseService>()),
+              PerformanceRepositoryImpl(context.read<FirebaseService>(), context.read<Dio>()),
         ),
         RepositoryProvider<BreathsRepository>(
           create: (context) =>
@@ -116,7 +119,6 @@ class MyApp extends StatelessWidget {
             context.read<PracticesAudioService>(),
           ),
         ),
-        RepositoryProvider<MidiParseRepository>(create: (context) => MidiParseRepositoryImpl()),
       ],
       child: MultiBlocProvider(
         providers: [
@@ -129,10 +131,15 @@ class MyApp extends StatelessWidget {
             )..add(AppStarted()),
           ),
         ],
-        child: MaterialApp.router(
-          debugShowCheckedModeBanner: false,
-          title: 'Ikara',
-          routerConfig: AppRouter.router,
+        child: Builder(
+          builder: (context) {
+            final authBloc = context.read<AuthBloc>();
+            return MaterialApp.router(
+              debugShowCheckedModeBanner: false,
+              title: 'Ikara',
+              routerConfig: AppRouter.router(authBloc, initialLocation),
+            );
+          }
         ),
       ),
     );

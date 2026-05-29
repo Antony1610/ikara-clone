@@ -1,5 +1,6 @@
 import '../../services/karaoke_audio_service.dart';
 import '../karaoke_audio_repository.dart';
+import '../practices_audio_repository.dart';
 
 class KaraokeAudioRepositoryImpl implements KaraokeAudioRepository {
   final KaraokeAudioService _karaokeService;
@@ -12,6 +13,8 @@ class KaraokeAudioRepositoryImpl implements KaraokeAudioRepository {
   @override
   Stream<int> get playbackProgressStream =>
       _karaokeService.playbackProgressStream;
+  @override
+  Stream<void> get completeStream => _karaokeService.onCompleteStream;
 
   @override
   Future<void> start(String audioUrl) => _karaokeService.start(audioUrl);

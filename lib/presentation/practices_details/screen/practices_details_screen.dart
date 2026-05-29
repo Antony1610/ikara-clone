@@ -6,7 +6,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:ikara_clone/constants/constants.dart';
-import 'package:ikara_clone/data/repositories/midi_parse_repository.dart';
 import 'package:ikara_clone/data/repositories/practices_audio_repository.dart';
 import 'package:ikara_clone/data/repositories/practices_repository.dart';
 import 'package:ikara_clone/data/repositories/user_repository.dart';
@@ -27,7 +26,6 @@ class _PracticesDetailsScreenState extends State<PracticesDetailsScreen> {
     return BlocProvider(
       create: (ctx) => PracticesDetailsBloc(
         ctx.read<PracticesRepository>(),
-        ctx.read<MidiParseRepository>(),
         ctx.read<PracticesAudioRepository>(),
         ctx.read<UserRepository>(),
         FirebaseAuth.instance.currentUser!.uid,

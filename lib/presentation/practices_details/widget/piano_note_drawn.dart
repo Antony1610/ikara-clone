@@ -219,6 +219,7 @@ class PianoPainter extends CustomPainter {
       canvas,
       size,
       currentMs,
+      userPitchHz,
       hitDurations,
       pitchHeight,
       noteHeight,
@@ -231,11 +232,16 @@ class PianoPainter extends CustomPainter {
     Canvas canvas,
     Size size,
     double currentMs,
+    double userPitchHz,
     Map<int, double> hitDurations,
     double pitchHeight,
     double noteHeight,
     double playheadX,
   ) {
+    final userMidi = userPitchHz > 50
+        ? 69.0 + 12.0 * (log(userPitchHz / 440.0) / ln2)
+        : -1.0;
+
     final visibleStartMs = currentMs - (playheadX / pxPerms);
     final visibleEndMs = currentMs + ((size.width - playheadX) / pxPerms);
 
@@ -272,10 +278,8 @@ class PianoPainter extends CustomPainter {
       );
 
       // Vẽ hit overlay
-      final isBeingHit =
-          hitDurations.containsKey(note.startMs) &&
-          hitDurations[note.startMs]! > 0;
-      if (isBeingHit) {
+      final isHit = userMidi > 0 && currentMs >= note.startMs && currentMs <= note.startMs + note.durationMs && (note.midiPitch - userMidi).abs() <= 0.4;
+      if (isHit) {
         final hitEndX = playheadX.clamp(startX + _minNoteWidth, safeEndX);
         canvas.drawRRect(
           RRect.fromLTRBR(startX, top, hitEndX, top + noteHeight, _noteRadius),

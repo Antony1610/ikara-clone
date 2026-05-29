@@ -1,6 +1,6 @@
 import 'dart:async';
+import 'dart:typed_data';
 
-import 'package:flutter/foundation.dart';
 import 'package:flutter_sound/flutter_sound.dart';
 import 'package:ikara_clone/data/services/pitch_detector_service.dart';
 import 'package:permission_handler/permission_handler.dart';
@@ -18,7 +18,8 @@ class KaraokeAudioService {
 
   Stream<double> get pitchStream => _pitchController.stream;
   Stream<int> get playbackProgressStream => _playbackProgressController.stream;
-
+  final _completeController = StreamController<void>.broadcast();
+  Stream<void> get onCompleteStream => _completeController.stream;
   final List<int> _sampleAccumulator = [];
   static const int _requiredSamples = 1024;
   static const int _requiredBytes = _requiredSamples * 2;
@@ -36,18 +37,27 @@ class KaraokeAudioService {
     await _pitchDetector.initialize(
       sampleRate: 44100.0,
       bufferSize: 1024,
-      threshold: 0.15,
+      threshold: 0.2,
     );
 
     final granted = await _requestMicPermission();
     if (!granted) throw Exception("Microphone permission denied");
 
     await _player.openPlayer();
-    await _player.setSubscriptionDuration(const Duration(milliseconds: 40));
+    await _player.setSubscriptionDuration(const Duration(milliseconds: 50));
     _player.onProgress?.listen((event) {
       _playbackProgressController.add(event.position.inMilliseconds);
     });
-    await _player.startPlayer(codec: Codec.mp3, fromURI: audioUrl);
+
+    await _player.startPlayer(
+      codec: Codec.mp3,
+      fromURI: audioUrl,
+      whenFinished: () {
+        if (!_completeController.isClosed) {
+          _completeController.add(null);
+        }
+      },
+    );
 
     await _recorder.openRecorder();
     _audioController = StreamController<Uint8List>();
@@ -57,16 +67,16 @@ class KaraokeAudioService {
     await _recorder.startRecorder(
       codec: Codec.pcm16,
       sampleRate: 44100,
-      numChannels: 1,
+      numChannels: 2,
       toStream: _audioController.sink,
     );
   }
 
   void _onAudioData(Uint8List buffer) {
     if (!_isRecording || _isProcessing) return;
+    final monoBuffer = _stereoToMono(buffer);
 
-    _sampleAccumulator.addAll(buffer);
-
+    _sampleAccumulator.addAll(monoBuffer);
     while (_sampleAccumulator.length >= _requiredBytes) {
       final frame = Uint8List.fromList(
         _sampleAccumulator.sublist(0, _requiredBytes),
@@ -74,11 +84,14 @@ class KaraokeAudioService {
       _sampleAccumulator.removeRange(0, _requiredBytes);
 
       _isProcessing = true;
-      _pitchDetector.getPitch(frame).then((pitch) {
-        if (pitch > 0 && !_pitchController.isClosed) {
-          _pitchController.add(pitch);
-        }
-      }).whenComplete(() => _isProcessing = false);
+      _pitchDetector
+          .getPitch(frame)
+          .then((pitch) {
+            if (pitch > 0 && !_pitchController.isClosed) {
+              _pitchController.add(pitch);
+            }
+          })
+          .whenComplete(() => _isProcessing = false);
 
       break;
     }
@@ -111,4 +124,18 @@ class KaraokeAudioService {
     _pitchController.close();
     _playbackProgressController.close();
   }
+
+  Uint8List _stereoToMono(Uint8List stereoBytes) {
+    final aligned = Uint8List.fromList(stereoBytes);
+    final stereoInt16 = aligned.buffer.asInt16List();
+    final monoLength = stereoInt16.length ~/2;
+    final monoInt16 = Int16List(monoLength);
+    for (int i = 0; i < stereoInt16.length - 1; i+=2) {
+      final left = stereoInt16[i];
+      final right = stereoInt16[i+1];
+      monoInt16[i~/2] = (left + right) >> 1;
+    }
+    return monoInt16.buffer.asUint8List();
+  }
+
 }

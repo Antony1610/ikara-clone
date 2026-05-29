@@ -7,7 +7,6 @@ import 'package:flutter/cupertino.dart';
 import 'package:ikara_clone/data/model/model.dart';
 import 'package:ikara_clone/data/model/practices/midi_note_practices.dart';
 import 'package:ikara_clone/data/model/user/practices_user_result.dart';
-import 'package:ikara_clone/data/repositories/midi_parse_repository.dart';
 import 'package:ikara_clone/data/repositories/practices_audio_repository.dart';
 import 'package:ikara_clone/data/repositories/practices_repository.dart';
 import 'package:ikara_clone/data/repositories/user_repository.dart';
@@ -17,7 +16,6 @@ part 'practices_details_state.dart';
 class PracticesDetailsBloc
     extends Bloc<PracticesDetailsEvent, PracticesDetailsState> {
   final PracticesRepository _practicesRepository;
-  final MidiParseRepository _midiParseRepository;
   final PracticesAudioRepository _audioRepository;
   final String uid;
   final UserRepository _userRepository;
@@ -29,7 +27,6 @@ class PracticesDetailsBloc
   bool _isComplete = false;
   PracticesDetailsBloc(
     this._practicesRepository,
-    this._midiParseRepository,
     this._audioRepository,
     this._userRepository,
     this.uid,
@@ -49,7 +46,7 @@ class PracticesDetailsBloc
       await _cancelSubscription();
       await _audioRepository.stop();
       final practices = await _practicesRepository.getPractices(event.id);
-      final notes = await _midiParseRepository.getMidiNotes(
+      final notes = await _practicesRepository.getMidiNotes(
         'assets/assets_data/Archive/${practices!.midiUrl}',
       );
       await _audioRepository.load(practices.mp3Url);
@@ -98,7 +95,7 @@ class PracticesDetailsBloc
     _pitchSub = _audioRepository.pitchStream.listen((pitch) {
       add(UpdatePitch(pitch));
     });
-    
+
     _completeSub = _audioRepository.completeStream.listen((_) {
       add(CompletePractices());
     });

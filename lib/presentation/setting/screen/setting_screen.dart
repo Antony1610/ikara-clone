@@ -247,7 +247,6 @@ class _SettingScreenState extends State<SettingScreen> {
     );
     if (confirmed == true && context.mounted) {
       context.read<AuthBloc>().add(LogoutRequested());
-      context.go('/login');
     }
   }
 }

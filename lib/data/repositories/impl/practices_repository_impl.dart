@@ -4,8 +4,13 @@ import 'package:ikara_clone/data/repositories/practices_repository.dart';
 import 'package:ikara_clone/data/services/firebase_service.dart';
 import 'package:ikara_clone/resources/firestore/firestore_resources.dart';
 
+import '../../karaoke/midi_parse.dart';
+import '../../model/practices/midi_note_practices.dart';
+
 class PracticesRepositoryImpl implements PracticesRepository {
   final FirebaseService _service;
+  final _midiParse = MidiParse();
+
   static const _tag = 'PracticesRepositoryImpl';
   PracticesRepositoryImpl(this._service);
 
@@ -59,5 +64,9 @@ class PracticesRepositoryImpl implements PracticesRepository {
       );
       throw NetworkException('Lỗi khi lấy thông tin chi tiết bài luyện thanh');
     }
+  }
+  @override
+  Future<List<MidiNotePractices>> getMidiNotes(String midiPath) {
+    return _midiParse.parseFromPathAsync(midiPath);
   }
 }

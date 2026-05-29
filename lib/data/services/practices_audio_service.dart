@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:io';
+import 'dart:typed_data';
 import 'package:flutter/services.dart';
 import 'package:flutter_sound/flutter_sound.dart';
 import 'package:ikara_clone/data/services/pitch_detector_service.dart';
@@ -82,7 +83,7 @@ class PracticesAudioService {
       _recorder.startRecorder(
         codec: Codec.pcm16,
         sampleRate: 44100,
-        numChannels: 1,
+        numChannels: 2,
         toStream: _audioController!.sink,
       ),
     ]);
@@ -136,10 +137,28 @@ class PracticesAudioService {
     }
   }
 
+  Uint8List _stereoToMono(Uint8List stereoBytes) {
+
+    final aligned = Uint8List.fromList(stereoBytes);
+    final stereoInt16 = aligned.buffer.asInt16List();
+
+    final monoLength = stereoInt16.length ~/ 2;
+    final monoInt16 = Int16List(monoLength);
+
+    for (int i = 0; i < stereoInt16.length - 1; i += 2) {
+      final left  = stereoInt16[i];
+      final right = stereoInt16[i + 1];
+      monoInt16[i ~/ 2] = (left + right) >> 1;
+    }
+
+    return monoInt16.buffer.asUint8List();
+  }
+
   void _onAudioData(Uint8List buffer) {
     if (!_isRecording || _isProcessing) return;
 
-    _sampleAccumulator.addAll(buffer);
+    final monoBuffer = _stereoToMono(buffer);
+    _sampleAccumulator.addAll(monoBuffer);
 
     while (_sampleAccumulator.length >= _requiredBytes) {
       final frame = Uint8List.fromList(
