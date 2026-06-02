@@ -20,7 +20,7 @@ class _SettingScreenState extends State<SettingScreen> {
       extendBodyBehindAppBar: true,
       appBar: AppBar(
         leading: IconButton(
-          onPressed: () => context.pop(),
+          onPressed: () => context.go('/performance'),
           icon: Icon(Icons.arrow_back_ios, color: AppColors.primaryText),
         ),
         backgroundColor: Colors.transparent,
@@ -169,30 +169,37 @@ class _SettingScreenState extends State<SettingScreen> {
             icon: Icons.error_outline,
             title: "Báo cáo lỗi",
             onTap: () => context.push('/report-bug'),
+            check: true,
           ),
           const SizedBox(height: 8),
           _MenuItem(
             icon: Icons.description_outlined,
             title: "Chính sách",
             onTap: () => context.push('/policy'),
+            check: true,
           ),
           const SizedBox(height: 8),
           _MenuItem(
             icon: Icons.cancel_outlined,
             title: "Hủy tài khoản",
             onTap: () => context.push('/cancel-account'),
+            check: true,
           ),
           const SizedBox(height: 8),
           _MenuItem(
             icon: Icons.support_agent_outlined,
             title: "Hỗ trợ",
-            onTap: () => context.push('/support'),
+            // onTap: () => context.push('/support'),
+            check: true,
           ),
+          const SizedBox(height: 8),
+          _MenuItem(icon: Icons.restart_alt, title: "Phiên bản 1.0.0", check: false,),
           const SizedBox(height: 8),
           _MenuItem(
             icon: Icons.exit_to_app_outlined,
             title: "Đăng xuất",
             onTap: () => _showSignOutDialog(context),
+            check: false,
           ),
         ],
       ),
@@ -254,9 +261,10 @@ class _SettingScreenState extends State<SettingScreen> {
 class _MenuItem extends StatelessWidget {
   final IconData icon;
   final String title;
+  final bool check;
   final VoidCallback? onTap;
 
-  const _MenuItem({required this.icon, required this.title, this.onTap});
+  const _MenuItem({required this.icon, required this.title, this.onTap, required this.check});
 
   @override
   Widget build(BuildContext context) {
@@ -273,7 +281,7 @@ class _MenuItem extends StatelessWidget {
               fontWeight: FontWeight.w400,
             ),
           ),
-          trailing: Icon(Icons.chevron_right, color: AppColors.primaryText),
+          trailing: check ? Icon(Icons.chevron_right, color: AppColors.primaryText) : null,
           onTap: onTap,
         ),
         Divider(

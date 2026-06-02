@@ -52,11 +52,7 @@ class KaraokeAudioService {
     await _player.startPlayer(
       codec: Codec.mp3,
       fromURI: audioUrl,
-      whenFinished: () {
-        if (!_completeController.isClosed) {
-          _completeController.add(null);
-        }
-      },
+      whenFinished:  _onPlaybackFinished,
     );
 
     await _recorder.openRecorder();
@@ -97,6 +93,13 @@ class KaraokeAudioService {
     }
   }
 
+  void _onPlaybackFinished() {
+    _isRecording = false;
+    if (!_completeController.isClosed) {
+      _completeController.add(null);
+    }
+  }
+
   Future<void> stop() async {
     _isRecording = false;
     _sampleAccumulator.clear();
@@ -123,19 +126,19 @@ class KaraokeAudioService {
     await stop();
     _pitchController.close();
     _playbackProgressController.close();
+    _completeController.close();
   }
 
   Uint8List _stereoToMono(Uint8List stereoBytes) {
     final aligned = Uint8List.fromList(stereoBytes);
     final stereoInt16 = aligned.buffer.asInt16List();
-    final monoLength = stereoInt16.length ~/2;
+    final monoLength = stereoInt16.length ~/ 2;
     final monoInt16 = Int16List(monoLength);
-    for (int i = 0; i < stereoInt16.length - 1; i+=2) {
+    for (int i = 0; i < stereoInt16.length - 1; i += 2) {
       final left = stereoInt16[i];
-      final right = stereoInt16[i+1];
-      monoInt16[i~/2] = (left + right) >> 1;
+      final right = stereoInt16[i + 1];
+      monoInt16[i ~/ 2] = (left + right) >> 1;
     }
     return monoInt16.buffer.asUint8List();
   }
-
 }

@@ -36,17 +36,29 @@ class _AnimatedPianoGridState extends State<AnimatedPianoGrid>
   final _userPitchNotifier = ValueNotifier<double>(0);
   final _hitDurationNotifier = ValueNotifier<Map<int, double>>({});
 
+  //Parallel list (Map hitDuration to List)
+  // final _hitValueNotifier = ValueNotifier<Float32List>(Float32List(0));
   int _baseMs = 0;
   Duration _baseElapsed = Duration.zero;
+  // Float32List _generateHitValues(
+  //   List<MidiNote> notes,
+  //   Map<int, double> hitDuration,
+  // ) {
+  //   final list = Float32List(notes.length);
+  //   for (int i = 0; i < notes.length; i++) {
+  //     list[i] = hitDuration[notes[i].startMs] ?? 0.0;
+  //   }
+  //   return list;
+  // }
 
   @override
   void initState() {
     super.initState();
     _baseMs = widget.currentMs;
-    _smoothMsNotifier.value = widget.currentMs.toDouble();
+    _smoothMsNotifier.value = _baseMs.toDouble();
     _userPitchNotifier.value = widget.userPitchHz;
-    _hitDurationNotifier.value = widget.hitDurations;
 
+    _hitDurationNotifier.value = widget.hitDurations;
     _controller = AnimationController(
       vsync: this,
       duration: const Duration(days: 999),
@@ -69,15 +81,12 @@ class _AnimatedPianoGridState extends State<AnimatedPianoGrid>
       _baseMs = widget.currentMs;
       _baseElapsed = _controller.lastElapsedDuration ?? Duration.zero;
     }
-
     if (old.userPitchHz != widget.userPitchHz) {
       _userPitchNotifier.value = widget.userPitchHz;
     }
-
-    if (old.hitDurations != widget.hitDurations) {
+    if (old.hitDurations != widget.hitDurations || old.notes != widget.notes) {
       _hitDurationNotifier.value = widget.hitDurations;
     }
-
     if (old.isPlaying != widget.isPlaying) {
       if (widget.isPlaying) {
         _baseMs = widget.currentMs;
@@ -95,7 +104,6 @@ class _AnimatedPianoGridState extends State<AnimatedPianoGrid>
       ..removeListener(_onTick)
       ..dispose();
     _smoothMsNotifier.dispose();
-    _userPitchNotifier.dispose();
     _hitDurationNotifier.dispose();
     super.dispose();
   }
@@ -120,13 +128,13 @@ class _AnimatedPianoGridState extends State<AnimatedPianoGrid>
 }
 
 class PianoGridPainter extends CustomPainter {
-  final List<MidiNote> notes;
+  List<MidiNote> notes;
   final ValueNotifier<double> smoothMsListenable;
   final ValueNotifier<double> userPitchListenable;
   final ValueNotifier<Map<int, double>> hitDurationsListenable;
-  final int minPitch;
-  final int maxPitch;
-  final double pxPerms;
+  int minPitch;
+  int maxPitch;
+  double pxPerms;
 
   double _cachedPitchHz = 0;
   double _cachedUserMidi = 0;
@@ -158,12 +166,12 @@ class PianoGridPainter extends CustomPainter {
     required this.maxPitch,
     required this.pxPerms,
   }) : super(
-    repaint: Listenable.merge([
-      smoothMsListenable,
-      userPitchListenable,
-      hitDurationsListenable,
-    ]),
-  );
+         repaint: Listenable.merge([
+           smoothMsListenable,
+           userPitchListenable,
+           hitDurationsListenable,
+         ]),
+       );
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -196,7 +204,6 @@ class PianoGridPainter extends CustomPainter {
         lo = mid + 1;
       }
     }
-
     for (int i = first; i < notes.length; i++) {
       final note = notes[i];
       if (note.startMs > visibleEndMs) break;
@@ -206,9 +213,12 @@ class PianoGridPainter extends CustomPainter {
 
       final double startX = rawStartX + _strokeRadius;
       double endX = rawEndX - _strokeRadius;
+      if (endX < 0 || startX > size.width) continue;
       if (endX < startX) endX = startX + 0.1;
 
-      if (endX < -_strokeRadius || startX > size.width + _strokeRadius) continue;
+      if (endX < -_strokeRadius || startX > size.width + _strokeRadius) {
+        continue;
+      }
 
       final y = size.height - (note.midiPitch - minPitch + 1) * pitchHeight;
 
@@ -217,13 +227,14 @@ class PianoGridPainter extends CustomPainter {
       final hitMs = hitDurations[note.startMs] ?? 0.0;
       if (hitMs > 0) {
         final playedMs = (currentMs - note.startMs).clamp(0, note.durationMs);
-        final hitStart = playedMs.toDouble() - hitMs;
-        final hitStartX = ((rawStartX + hitStart * pxPerms) + _strokeRadius).clamp(startX, endX);
-        double hitEndX = (rawStartX + playedMs * pxPerms) - _strokeRadius;
+        final hitStart = max(0.0, playedMs.toDouble() - hitMs);
+        final hitStartX = (rawStartX + hitStart * pxPerms).clamp(startX, endX);
+        double hitEndX = (rawStartX + playedMs * pxPerms).clamp(startX, endX);
         if (hitEndX < hitStartX) hitEndX = hitStartX + 0.1;
         if (hitEndX > endX) hitEndX = endX;
 
-        if (hitEndX > -_strokeRadius && hitStartX < size.width + _strokeRadius) {
+        if (hitEndX > -_strokeRadius &&
+            hitStartX < size.width + _strokeRadius) {
           canvas.drawLine(Offset(hitStartX, y), Offset(hitEndX, y), _paintSung);
         }
       }
@@ -237,12 +248,18 @@ class PianoGridPainter extends CustomPainter {
 
     if (_cachedUserMidi > 0) {
       final userY =
-      (size.height - (_cachedUserMidi - minPitch + 1) * pitchHeight)
-          .clamp(0.0, size.height);
+          (size.height - (_cachedUserMidi - minPitch + 1) * pitchHeight).clamp(
+            0.0,
+            size.height,
+          );
       canvas.drawCircle(Offset(playheadX, userY), 8, _paintUserDot);
     }
   }
 
   @override
-  bool shouldRepaint(covariant PianoGridPainter old) => false;
+  bool shouldRepaint(covariant PianoGridPainter old) =>
+      old.minPitch != minPitch ||
+      old.maxPitch != maxPitch ||
+      old.pxPerms != pxPerms ||
+      old.notes != notes;
 }

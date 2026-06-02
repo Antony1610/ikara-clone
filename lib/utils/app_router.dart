@@ -34,6 +34,8 @@ import '../presentation/lesson_question_result/screen/lesson_result_screen.dart'
 import '../presentation/login/bloc/login_bloc.dart';
 import '../presentation/login/screen/phone_number_send_otp.dart';
 import '../presentation/login/screen/verify_otp_screen.dart';
+import '../presentation/policy/screen/policy_detail_screen.dart';
+import '../presentation/policy/screen/policy_screen.dart';
 import '../presentation/practices_details/screen/practices_details_screen.dart';
 import '../presentation/practices_results/screen/practices_results_screen.dart';
 import '../presentation/profile/bloc/profile_bloc.dart';
@@ -338,6 +340,29 @@ class AppRouter {
           return CustomTransitionPage(
             key: state.pageKey,
             child: PerformanceResultsScreen(score: extra['score'] as int),
+            transitionsBuilder: AppTransitions.slideFromRight,
+          );
+        },
+      ),
+      GoRoute(
+        path: '/policy',
+        pageBuilder: (context, state) => CustomTransitionPage(
+          key: state.pageKey,
+          child: const PolicyScreen(),
+          transitionsBuilder: AppTransitions.slideFromRight,
+        ),
+      ),
+      GoRoute(
+        path: '/policy-detail',
+        pageBuilder: (context, state) {
+          final args = state.extra as Map<String, dynamic>;
+
+          return CustomTransitionPage(
+            key: state.pageKey,
+            child: PolicyDetailScreen(
+              title: args['insideTitle'] as String,
+              url: args['url'] as String,
+            ),
             transitionsBuilder: AppTransitions.slideFromRight,
           );
         },

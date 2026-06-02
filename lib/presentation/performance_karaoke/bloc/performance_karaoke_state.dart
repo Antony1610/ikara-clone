@@ -22,18 +22,18 @@ class ErrorKaraoke extends PerformanceKaraokeState {
 class LoadedKaraoke extends PerformanceKaraokeState {
   final PerformanceLesson lesson;
   final KarSong song;
-  final int currentMs;
-  final double userPitchHz;
   final int minPitch;
   final int maxPitch;
   final Map<int, double> hitDuration;
   final bool isPlaying;
   final int totalHitMs;
+  final double userPitchHz;
+  final int currentTimeMs;
   const LoadedKaraoke({
+    required this.currentTimeMs,
+    required this.userPitchHz,
     required this.lesson,
     required this.song,
-    required this.currentMs,
-    required this.userPitchHz,
     required this.minPitch,
     required this.maxPitch,
     required this.hitDuration,
@@ -44,24 +44,24 @@ class LoadedKaraoke extends PerformanceKaraokeState {
   LoadedKaraoke copyWith({
     PerformanceLesson? lesson,
     KarSong? song,
-    int? currentMs,
-    double? userPitchHz,
     int? minPitch,
     int? maxPitch,
     Map<int, double>? hitDuration,
     bool? isPlaying,
-    int? totalHitMs
+    int? totalHitMs,
+    int? currentTimeMs,
+    double? userPitchHz
   }) {
     return LoadedKaraoke(
       lesson: lesson ?? this.lesson,
       song: song ?? this.song,
-      currentMs: currentMs ?? this.currentMs,
-      userPitchHz: userPitchHz ?? this.userPitchHz,
       minPitch: minPitch ?? this.minPitch,
       maxPitch: maxPitch ?? this.maxPitch,
       hitDuration: hitDuration ?? this.hitDuration,
       isPlaying: isPlaying ?? this.isPlaying,
-      totalHitMs: totalHitMs ?? this.totalHitMs
+      totalHitMs: totalHitMs ?? this.totalHitMs,
+      currentTimeMs: currentTimeMs ?? this.currentTimeMs,
+      userPitchHz: userPitchHz ?? this.userPitchHz
     );
   }
 
@@ -69,13 +69,13 @@ class LoadedKaraoke extends PerformanceKaraokeState {
   List<Object?> get props => [
     lesson,
     song,
-    currentMs,
-    userPitchHz,
     minPitch,
     maxPitch,
     hitDuration,
     isPlaying,
-    totalHitMs
+    totalHitMs,
+    currentTimeMs,
+    userPitchHz
   ];
 }
 

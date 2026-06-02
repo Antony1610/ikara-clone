@@ -30,7 +30,7 @@ class HomeScreen extends StatelessWidget {
                 child: BottomNavigationBar(
                   selectedFontSize: 12,
                   unselectedFontSize: 10,
-                  currentIndex: state.index,
+                  currentIndex: navigationShell.currentIndex,
                   backgroundColor: AppColors.bottomNavigationBar,
                   selectedItemColor: AppColors.selectionColor,
                   unselectedItemColor: AppColors.unSelection,

@@ -7,14 +7,21 @@ class LoadPerformance extends PerformanceKaraokeEvent {
   LoadPerformance(this.id);
 }
 
-class UpdatePlaybackTime extends PerformanceKaraokeEvent {
+
+// class UpdateUserPitch extends PerformanceKaraokeEvent {
+//   final double pitchHz;
+//   final int currentMs;
+//   UpdateUserPitch(this.pitchHz, this.currentMs);
+// }
+
+class UpdatePosition extends PerformanceKaraokeEvent {
   final int currentMs;
-  UpdatePlaybackTime(this.currentMs);
+  UpdatePosition(this.currentMs);
 }
 
-class UpdateUserPitch extends PerformanceKaraokeEvent {
-  final double pitchHz;
-  UpdateUserPitch(this.pitchHz);
+class UpdatePitch extends PerformanceKaraokeEvent {
+  final double userPitchHz;
+  UpdatePitch(this.userPitchHz);
 }
 
 class PauseKaraoke extends PerformanceKaraokeEvent {}

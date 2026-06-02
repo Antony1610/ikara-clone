@@ -46,7 +46,7 @@ class _PerformanceDetailScreenState extends State<PerformanceDetailScreen> {
           appBar: AnimatedAppBar(
             appBar: AppBar(
               leading: IconButton(
-                onPressed: () => context.pop(),
+                onPressed: () => context.go('/performance'),
                 icon: const Icon(Icons.arrow_back_ios),
               ),
               title: Text(
@@ -144,7 +144,8 @@ class _VideoSectionState extends State<_VideoSection> {
           ),
         ),
         _toSing(context),
-        SizedBox(height: MediaQuery.of(context).padding.bottom + 16,)
+        SizedBox(height: MediaQuery.of(context).padding.bottom + 16,),
+        const SizedBox(height: 10,)
       ],
     );
   }
@@ -210,7 +211,7 @@ class _VideoSectionState extends State<_VideoSection> {
         child: ElevatedButton(
           onPressed: () {
             _pauseVideo?.call();
-            context.push('/karaoke/${widget.state.lesson.id}');
+            context.go('/karaoke/${widget.state.lesson.id}');
           },
           style: ElevatedButton.styleFrom(
             backgroundColor: AppColors.progressColor,

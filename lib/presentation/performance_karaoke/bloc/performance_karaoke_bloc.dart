@@ -1,59 +1,45 @@
 import 'dart:async';
 import 'dart:math';
-import 'package:dio/dio.dart';
 import 'package:bloc/bloc.dart';
+import 'package:equatable/equatable.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:ikara_clone/data/model/model.dart';
 import 'package:ikara_clone/data/model/performances/kar_song.dart';
 import 'package:ikara_clone/data/repositories/performance_repository.dart';
 import '../../../data/repositories/karaoke_audio_repository.dart';
-import 'package:equatable/equatable.dart';
+
 part 'performance_karaoke_event.dart';
 part 'performance_karaoke_state.dart';
 
-class PerformanceKaraokeBloc
-    extends Bloc<PerformanceKaraokeEvent, PerformanceKaraokeState> {
+class PerformanceKaraokeBloc extends Bloc<PerformanceKaraokeEvent, PerformanceKaraokeState> {
   final PerformanceRepository repository;
   final KaraokeAudioRepository karaokeAudioRepository;
-
-  StreamSubscription? _pitchSubscription;
-  StreamSubscription? _playbackSubscription;
 
   int _lastMs = 0;
   double _latestPitch = 0.0;
   bool _isComplete = false;
-
+  late final StreamSubscription _completeSub;
   PerformanceKaraokeBloc({
     required this.repository,
     required this.karaokeAudioRepository,
   }) : super(InitialKaraoke()) {
     on<LoadPerformance>(_onLoadPerformance);
-    on<UpdatePlaybackTime>(_onUpdatePlaybackTime);
-    on<UpdateUserPitch>(_onUpdateUserPitch);
+    // on<UpdateUserPitch>(_onUpdateUserPitch);
     on<PauseKaraoke>(_onPauseKaraoke);
     on<ResumeKaraoke>(_onResumeKaraoke);
+    on<UpdatePosition>(_onUpdatePosition);
+    on<UpdatePitch>(_onUpdatePitch);
     on<CompleteKaraoke>(_onCompleteKaraoke);
-  }
-
-  void _startSubscriptions() {
-    _playbackSubscription = karaokeAudioRepository
-        .playbackProgressStream
-        .listen((ms) {
-      if (!isClosed) add(UpdatePlaybackTime(ms));
-    });
-
-    _pitchSubscription = karaokeAudioRepository.pitchStream.listen((pitchHz) {
-      if (!isClosed) add(UpdateUserPitch(pitchHz));
+    _completeSub = karaokeAudioRepository.completeStream.listen((_) {
+      if (!_isComplete) {
+        add(CompleteKaraoke());
+      }
     });
   }
 
-  Future<void> _onLoadPerformance(
-      LoadPerformance event, Emitter emit) async {
-    await _cancelSubscriptions();
-
+  Future<void> _onLoadPerformance(LoadPerformance event, Emitter emit) async {
     _lastMs = 0;
-    _latestPitch = 0.0;
     _isComplete = false;
-
     emit(LoadingKaraoke());
 
     try {
@@ -67,49 +53,100 @@ class PerformanceKaraokeBloc
       emit(LoadedKaraoke(
         lesson: lesson,
         song: song,
-        currentMs: 0,
-        userPitchHz: 0.0,
         minPitch: minPitch,
         maxPitch: maxPitch,
         hitDuration: const {},
         isPlaying: true,
-        totalHitMs: 0
+        totalHitMs: 0,
+        currentTimeMs: 0,
+        userPitchHz: 0.0
       ));
 
       await karaokeAudioRepository.start(lesson.karaokeLink);
-      if (!isClosed) _startSubscriptions();
-
-    } on DioException catch (e) {
-      emit(ErrorKaraoke('Lỗi kết nối mạng: ${e.message}'));
     } catch (e) {
       emit(ErrorKaraoke(e.toString()));
     }
   }
 
-  void _onUpdatePlaybackTime(UpdatePlaybackTime event, Emitter emit) {
+  // void _onUpdateUserPitch(UpdateUserPitch event, Emitter emit) {
+  //   if (_isComplete) return;
+  //   final s = state;
+  //   if (s is! LoadedKaraoke || !s.isPlaying) return;
+  //
+  //   final currentMs = event.currentMs;
+  //   final pitch = event.pitchHz;
+  //
+  //   // HIT SCORING LOGIC
+  //   debugPrint("pitch: $pitch");
+  //   if (pitch > 50) {
+  //     final userMidi = 69.0 + 12.0 * (log(pitch / 440.0) / ln2);
+  //     final notes = s.song.notes;
+  //
+  //     // Binary search for note at current time
+  //     int lo = 0, hi = notes.length - 1;
+  //     while (lo <= hi) {
+  //       final mid = (lo + hi) >> 1;
+  //       final note = notes[mid];
+  //       if (currentMs < note.startMs) {
+  //         hi = mid - 1;
+  //       } else if (currentMs > note.startMs + note.durationMs) {
+  //         lo = mid + 1;
+  //       } else {
+  //         // Check if pitch matches
+  //         if ((userMidi - note.midiPitch).abs() <= 0.4) {
+  //           int delta = currentMs - _lastMs;
+  //           if (delta <= 0 || delta > 100) delta = 16; // Approx 1 frame
+  //
+  //           final updatedHit = Map<int, double>.from(s.hitDuration);
+  //           updatedHit[note.startMs] = (updatedHit[note.startMs] ?? 0.0) + delta;
+  //           debugPrint('hit duration: $updatedHit');
+  //           emit(s.copyWith(
+  //             hitDuration: updatedHit,
+  //             totalHitMs: s.totalHitMs + delta,
+  //           ));
+  //         }
+  //         break;
+  //       }
+  //     }
+  //   }
+  //   _lastMs = currentMs;
+  // }
+
+  void _onUpdatePitch(UpdatePitch event, Emitter emit) {
+    if (_isComplete) return;
+    _latestPitch = event.userPitchHz;
+    final s = state;
+    if (s is! LoadedKaraoke) return;
+    if (!s.isPlaying) return;
+    debugPrint('UserPitchHz: $_latestPitch');
+    emit(s.copyWith(userPitchHz: _latestPitch));
+  }
+
+  void _onUpdatePosition(UpdatePosition event, Emitter emit) {
     if (_isComplete) return;
 
     final s = state;
     if (s is! LoadedKaraoke) return;
     if (!s.isPlaying) return;
+    final currentTimeMs = event.currentMs;
 
-    final currentMs = event.currentMs;
-
-    int delta = currentMs - _lastMs;
-    if (delta <= 0 || delta > 200) delta = 50;
-    _lastMs = currentMs;
-
+    int delta = currentTimeMs - _lastMs;
+    if (delta <= 0 || delta > 200) delta = 50; // xử lý trường hợp lỗi
+    _lastMs = currentTimeMs;
     if (s.song.notes.isNotEmpty) {
-      final last = s.song.notes.last;
-      if (currentMs >= last.startMs + last.durationMs) {
+      final lastNote = s.song.notes.last;
+      final endMs = lastNote.startMs + lastNote.durationMs;
+      if (currentTimeMs >= endMs) {
         _isComplete = true;
         add(CompleteKaraoke());
         return;
       }
     }
 
-    final updatedHit = Map<int, double>.from(s.hitDuration);
     int newTotalHitMs = s.totalHitMs;
+    final updatedHitDurations = Map<int, double>.from(s.hitDuration);
+
+    // Binary search
     if (_latestPitch > 50) {
       final userMidi = 69.0 + 12.0 * (log(_latestPitch / 440.0) / ln2);
       final notes = s.song.notes;
@@ -118,73 +155,57 @@ class PerformanceKaraokeBloc
       while (lo <= hi) {
         final mid = (lo + hi) >> 1;
         final note = notes[mid];
-        if (currentMs < note.startMs) {
+        if (currentTimeMs < note.startMs) {
           hi = mid - 1;
-        } else if (currentMs > note.startMs + note.durationMs) {
+        } else if (currentTimeMs > note.startMs + note.durationMs) {
           lo = mid + 1;
         } else {
           if ((userMidi - note.midiPitch).abs() <= 0.4) {
             newTotalHitMs += delta;
-            updatedHit[note.startMs] =
-                (updatedHit[note.startMs] ?? 0.0) + delta;
+            updatedHitDurations[note.startMs] =
+                (updatedHitDurations[note.startMs] ?? 0.0) + delta;
           }
           break;
         }
       }
     }
 
-    emit(s.copyWith(
-      currentMs: currentMs,
-      hitDuration: updatedHit,
-      totalHitMs: newTotalHitMs
-    ));
-  }
-
-  void _onUpdateUserPitch(UpdateUserPitch event, Emitter emit) {
-    if (_isComplete) return;
-    _latestPitch = event.pitchHz;
-    final s = state;
-    if (s is! LoadedKaraoke) return;
-    if (!s.isPlaying) return;
-    emit(s.copyWith(userPitchHz: _latestPitch));
+    emit(
+      s.copyWith(
+        currentTimeMs: currentTimeMs,
+        totalHitMs: newTotalHitMs,
+        hitDuration: updatedHitDurations,
+      ),
+    );
   }
 
   void _onPauseKaraoke(PauseKaraoke event, Emitter emit) {
-    final s = state;
-    if (s is! LoadedKaraoke) return;
-    karaokeAudioRepository.pause();
-    emit(s.copyWith(isPlaying: false));
+    if (state is LoadedKaraoke) {
+      karaokeAudioRepository.pause();
+      emit((state as LoadedKaraoke).copyWith(isPlaying: false));
+    }
   }
 
   void _onResumeKaraoke(ResumeKaraoke event, Emitter emit) {
-    final s = state;
-    if (s is! LoadedKaraoke) return;
-    karaokeAudioRepository.resume();
-    emit(s.copyWith(isPlaying: true));
+    if (state is LoadedKaraoke) {
+      karaokeAudioRepository.resume();
+      emit((state as LoadedKaraoke).copyWith(isPlaying: true));
+    }
   }
 
   Future<void> _onCompleteKaraoke(CompleteKaraoke event, Emitter emit) async {
     final s = state;
     if (s is! LoadedKaraoke) return;
     _isComplete = true;
-    await _cancelSubscriptions();
     await karaokeAudioRepository.stop();
     final totalNoteMs = s.song.notes.fold<int>(0, (sum, n) => sum + n.durationMs);
-    final score = totalNoteMs > 0 ? ((s.totalHitMs / totalNoteMs)*100).clamp(0, 100).round() : 0;
+    final score = totalNoteMs > 0 ? ((s.totalHitMs / totalNoteMs) * 100).clamp(0, 100).round() : 0;
     emit(CompletedKaraoke(score));
   }
 
-  Future<void> _cancelSubscriptions() async {
-    await _pitchSubscription?.cancel();
-    await _playbackSubscription?.cancel();
-    _pitchSubscription = null;
-    _playbackSubscription = null;
-  }
-
   @override
-  Future<void> close() async {
-    await _cancelSubscriptions();
-    await karaokeAudioRepository.stop();
+  Future<void> close() {
+    _completeSub.cancel();
     return super.close();
   }
 }

@@ -56,7 +56,7 @@ class _PerformancesPageViewState extends State<_PerformancesPageView> {
         actions: [
           Padding(padding: EdgeInsets.only(right: 12),
           child: GestureDetector(
-            onTap: () => context.push('/setting'),
+            onTap: () => context.go('/setting'),
             child: CircleAvatar(
               radius: 18,
               backgroundColor: Colors.grey.shade300,
@@ -138,7 +138,7 @@ class _PerformanceItem extends StatelessWidget {
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: () {
-        context.push('/performanceDetail/${lesson.id}');
+        context.go('/performanceDetail/${lesson.id}');
       },
       child: Align(
         alignment: Alignment.topCenter,
