@@ -12,6 +12,8 @@ import 'package:ikara_clone/data/repositories/user_repository.dart';
 import 'package:ikara_clone/presentation/practices_details/bloc/practices_details_bloc.dart';
 import 'package:ikara_clone/presentation/practices_details/widget/piano_note_drawn.dart';
 
+import '../widget/intro_overlay.dart';
+
 class PracticesDetailsScreen extends StatefulWidget {
   final String id;
   const PracticesDetailsScreen({super.key, required this.id});
@@ -21,6 +23,9 @@ class PracticesDetailsScreen extends StatefulWidget {
 }
 
 class _PracticesDetailsScreenState extends State<PracticesDetailsScreen> {
+  bool _showIntroOverlay = false;
+  bool _hasShownIntro = false;
+  String _audioUrl = '';
   @override
   Widget build(BuildContext context) {
     return BlocProvider(
@@ -41,6 +46,13 @@ class _PracticesDetailsScreenState extends State<PracticesDetailsScreen> {
                   'status' : state.status
                 });
               }
+              if (state is LoadedPractices && !_hasShownIntro) {
+                _hasShownIntro = true;
+                setState(() {
+                  _audioUrl = state.practices.mp3Url;
+                  _showIntroOverlay = true;
+                });
+              }
             },
             child: Container(
               decoration: BoxDecoration(
@@ -53,7 +65,17 @@ class _PracticesDetailsScreenState extends State<PracticesDetailsScreen> {
                   end: Alignment.bottomCenter,
                 ),
               ),
-              child: Stack(children: [SafeArea(child: _body())]),
+              child: Stack(children: [SafeArea(child: _body()),
+                if (_showIntroOverlay)
+                  IntroOverlay(
+                    audioUrl: _audioUrl,
+                    id: widget.id,
+                    onClose: () {
+                      setState(() {
+                        _showIntroOverlay = false;
+                      });
+                    },
+                  ),]),
             ),
           ),
         ),

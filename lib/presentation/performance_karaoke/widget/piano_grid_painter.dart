@@ -8,6 +8,7 @@ class AnimatedPianoGrid extends StatefulWidget {
   final int currentMs;
   final double userPitchHz;
   final Map<int, double> hitDurations;
+  final Map<int, int> hitMs;
   final int minPitch;
   final int maxPitch;
   final double pxPerms;
@@ -19,6 +20,7 @@ class AnimatedPianoGrid extends StatefulWidget {
     required this.currentMs,
     required this.userPitchHz,
     required this.hitDurations,
+    required this.hitMs,
     required this.minPitch,
     required this.maxPitch,
     required this.pxPerms,
@@ -35,7 +37,7 @@ class _AnimatedPianoGridState extends State<AnimatedPianoGrid>
   final _smoothMsNotifier = ValueNotifier<double>(0);
   final _userPitchNotifier = ValueNotifier<double>(0);
   final _hitDurationNotifier = ValueNotifier<Map<int, double>>({});
-
+  final _hitMsNotifier = ValueNotifier<Map<int, int>>({});
   //Parallel list (Map hitDuration to List)
   // final _hitValueNotifier = ValueNotifier<Float32List>(Float32List(0));
   int _baseMs = 0;
@@ -57,7 +59,7 @@ class _AnimatedPianoGridState extends State<AnimatedPianoGrid>
     _baseMs = widget.currentMs;
     _smoothMsNotifier.value = _baseMs.toDouble();
     _userPitchNotifier.value = widget.userPitchHz;
-
+    _hitMsNotifier.value = widget.hitMs;
     _hitDurationNotifier.value = widget.hitDurations;
     _controller = AnimationController(
       vsync: this,
@@ -80,6 +82,9 @@ class _AnimatedPianoGridState extends State<AnimatedPianoGrid>
     if (old.currentMs != widget.currentMs) {
       _baseMs = widget.currentMs;
       _baseElapsed = _controller.lastElapsedDuration ?? Duration.zero;
+      if (!widget.isPlaying) {
+        _smoothMsNotifier.value = _baseMs.toDouble();
+      }
     }
     if (old.userPitchHz != widget.userPitchHz) {
       _userPitchNotifier.value = widget.userPitchHz;
@@ -87,10 +92,12 @@ class _AnimatedPianoGridState extends State<AnimatedPianoGrid>
     if (old.hitDurations != widget.hitDurations || old.notes != widget.notes) {
       _hitDurationNotifier.value = widget.hitDurations;
     }
+    if (old.hitMs != widget.hitMs) {
+      _hitMsNotifier.value = widget.hitMs;
+    }
     if (old.isPlaying != widget.isPlaying) {
       if (widget.isPlaying) {
         _baseMs = widget.currentMs;
-        _controller.reset();
         _baseElapsed = _controller.lastElapsedDuration ?? Duration.zero;
         _controller.forward();
       } else {
@@ -107,6 +114,7 @@ class _AnimatedPianoGridState extends State<AnimatedPianoGrid>
     _smoothMsNotifier.dispose();
     _userPitchNotifier.dispose();
     _hitDurationNotifier.dispose();
+    _hitMsNotifier.dispose();
     super.dispose();
   }
 
@@ -120,6 +128,7 @@ class _AnimatedPianoGridState extends State<AnimatedPianoGrid>
           smoothMsListenable: _smoothMsNotifier,
           userPitchListenable: _userPitchNotifier,
           hitDurationsListenable: _hitDurationNotifier,
+          hitMsListenable: _hitMsNotifier,
           minPitch: widget.minPitch,
           maxPitch: widget.maxPitch,
           pxPerms: widget.pxPerms,
@@ -134,6 +143,7 @@ class PianoGridPainter extends CustomPainter {
   final ValueNotifier<double> smoothMsListenable;
   final ValueNotifier<double> userPitchListenable;
   final ValueNotifier<Map<int, double>> hitDurationsListenable;
+  final ValueNotifier<Map<int, int>> hitMsListenable;
   int minPitch;
   int maxPitch;
   double pxPerms;
@@ -164,6 +174,7 @@ class PianoGridPainter extends CustomPainter {
     required this.smoothMsListenable,
     required this.userPitchListenable,
     required this.hitDurationsListenable,
+    required this.hitMsListenable,
     required this.minPitch,
     required this.maxPitch,
     required this.pxPerms,
@@ -172,6 +183,7 @@ class PianoGridPainter extends CustomPainter {
            smoothMsListenable,
            userPitchListenable,
            hitDurationsListenable,
+           hitMsListenable,
          ]),
        );
 
@@ -182,7 +194,7 @@ class PianoGridPainter extends CustomPainter {
     final currentMs = smoothMsListenable.value.toInt();
     final userPitchHz = userPitchListenable.value;
     final hitDurations = hitDurationsListenable.value;
-
+    final hitMsValue = hitMsListenable.value;
     final pitchHeight = size.height / (maxPitch - minPitch + 2);
     final playheadX = size.width * 0.3;
 
@@ -227,13 +239,16 @@ class PianoGridPainter extends CustomPainter {
       canvas.drawLine(Offset(startX, y), Offset(endX, y), _paintUpcoming);
 
       final hitMs = hitDurations[note.startMs] ?? 0.0;
-      if (hitMs > 0) {
-        final playedMs = (currentMs - note.startMs).clamp(0, note.durationMs);
-        final hitStart = max(0.0, playedMs.toDouble() - hitMs);
-        final hitStartX = (rawStartX + hitStart * pxPerms).clamp(startX, endX);
-        double hitEndX = (rawStartX + playedMs * pxPerms).clamp(startX, endX);
+      final hitStartMs = hitMsValue[note.startMs];
+      if (hitMs > 0 && hitStartMs != null) {
+        final offset = (hitStartMs - note.startMs).toDouble();
+        final playheadClampedEndX = min(playheadX, endX);
+        final hitStartX = (rawStartX + offset * pxPerms);
+        double hitEndX = (hitStartX + hitMs * pxPerms).clamp(
+          startX,
+          playheadClampedEndX,
+        );
         if (hitEndX < hitStartX) hitEndX = hitStartX + 0.1;
-
         if (hitEndX > -_strokeRadius &&
             hitStartX < size.width + _strokeRadius) {
           canvas.drawLine(Offset(hitStartX, y), Offset(hitEndX, y), _paintSung);

@@ -27,6 +27,9 @@ class KaraokeAudioService {
   bool _isPaused = false;
   final Uint8List _frameBuffer = Uint8List(_requiredBytes);
   int _bufferOffset = 0;
+  Duration _pausePosition = Duration.zero;
+  Duration _lastPositionKnow = Duration.zero;
+
   Future<bool> _requestMicPermission() async {
     final status = await Permission.microphone.request();
     return status.isGranted;
@@ -43,10 +46,13 @@ class KaraokeAudioService {
 
     final granted = await _requestMicPermission();
     if (!granted) throw Exception("Microphone permission denied");
+    if (_player.isOpen()) await _player.closePlayer();
 
     await _player.openPlayer();
     await _player.setSubscriptionDuration(const Duration(milliseconds: 50));
+    await _positionSub?.cancel();
     _positionSub = _player.onProgress!.listen((event) {
+      _lastPositionKnow = event.position;
       if (_isPaused) return;
       if (!_positionController.isClosed) {
         _positionController.add(event.position);
@@ -60,8 +66,13 @@ class KaraokeAudioService {
     );
 
     await _recorder.openRecorder();
+    await _subscription?.cancel();
+    _subscription = null;
+    if (_audioController != null && !_audioController!.isClosed) {
+      await _audioController!.close();
+    }
     _audioController = StreamController<Uint8List>();
-    _subscription = _audioController?.stream.listen(_onAudioData);
+    _subscription = _audioController!.stream.listen(_onAudioData);
     _isRecording = true;
 
     await _recorder.startRecorder(
@@ -115,6 +126,10 @@ class KaraokeAudioService {
     _isRecording = false;
     _isProcessing = false;
     _isPaused = false;
+    await _positionSub?.cancel();
+    _positionSub = null;
+    await _subscription?.cancel();
+    _subscription = null;
     await _pitchDetector.dispose();
     if (_recorder.isRecording || _recorder.isPaused) {
       await _recorder.stopRecorder();
@@ -124,31 +139,37 @@ class KaraokeAudioService {
       await _audioController!.close();
       _audioController = null;
     }
-    await _positionSub?.cancel();
-    await _subscription?.cancel();
+
     if (_player.isPlaying || _player.isPaused) await _player.stopPlayer();
     await _player.closePlayer();
   }
 
   Future<void> pause() async {
-    if (_player.isPlaying) {
-      _isPaused = true;
-      await _player.pausePlayer();
-      if (_recorder.isRecording) {
-        await _recorder.pauseRecorder();
-      }
-      _bufferOffset = 0;
+    if (!_isRecording || _isPaused) return;
+    _isPaused = true;
+    _pausePosition = _lastPositionKnow;
+    await Future.wait([
+      if (_player.isPlaying) _player.pausePlayer(),
+      if (_recorder.isRecording) _recorder.pauseRecorder(),
+    ]);
+    _bufferOffset = 0;
+
+    if (!_positionController.isClosed) {
+      _positionController.add(_pausePosition);
     }
   }
+  // Future<void> seekTo(Duration position) async {
+  //   if (_player.isPlaying || _player.isPaused) {
+  //     await _player.seekToPlayer(position);
+  //   }
+  // }
 
   Future<void> resume() async {
-    if (_player.isPaused) {
-      await _player.resumePlayer();
-      if (_recorder.isPaused) {
-        await _recorder.resumeRecorder();
-      }
-      _isPaused = false;
-    }
+    await Future.wait([
+      if (_player.isPaused) _player.resumePlayer(),
+      if (_recorder.isPaused) _recorder.resumeRecorder(),
+    ]);
+    _isPaused = false;
   }
 
   Future<void> dispose() async {

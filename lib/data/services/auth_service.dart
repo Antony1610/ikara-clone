@@ -11,9 +11,9 @@ class AuthService {
   Stream<User?> get authStateChanges => _firebaseAuth.authStateChanges();
 
   Future<void> initialize() async {
-    // await _googleSignIn.initialize(
-    //   serverClientId: '662006036899-u9bu0mrvqbaq0vql0ovq8atql8vanc35.apps.googleusercontent.com'
-    // );
+    await _googleSignIn.initialize(
+      serverClientId: '662006036899-u9bu0mrvqbaq0vql0ovq8atql8vanc35.apps.googleusercontent.com'
+    );
   }
 
   User? get currentUser => _firebaseAuth.currentUser;

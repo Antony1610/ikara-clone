@@ -243,3 +243,4 @@ class PracticesDetailsBloc
     return super.close();
   }
 }
+

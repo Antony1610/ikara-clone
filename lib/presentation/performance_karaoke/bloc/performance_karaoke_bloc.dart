@@ -18,6 +18,7 @@ class PerformanceKaraokeBloc extends Bloc<PerformanceKaraokeEvent, PerformanceKa
   int _lastMs = 0;
   double _latestPitch = 0.0;
   bool _isComplete = false;
+  int? _lastHitNoteStartMs;
   late final StreamSubscription _completeSub;
   PerformanceKaraokeBloc({
     required this.repository,
@@ -57,6 +58,7 @@ class PerformanceKaraokeBloc extends Bloc<PerformanceKaraokeEvent, PerformanceKa
           minPitch: minPitch,
           maxPitch: maxPitch,
           hitDuration: const {},
+          hitMs: const {},
           isPlaying: true,
           totalHitMs: 0,
           currentTimeMs: 0,
@@ -126,9 +128,14 @@ class PerformanceKaraokeBloc extends Bloc<PerformanceKaraokeEvent, PerformanceKa
     if (_isComplete) return;
 
     final s = state;
-    if (s is! LoadedKaraoke) return;
-    if (!s.isPlaying) return;
     final currentTimeMs = event.currentMs;
+
+    if (s is! LoadedKaraoke) return;
+    if (!s.isPlaying) {
+      _lastMs = currentTimeMs;
+      emit(s.copyWith(currentTimeMs: currentTimeMs));
+      return;
+    }
 
     int delta = currentTimeMs - _lastMs;
     if (delta <= 0 || delta > 200) delta = 50; // xử lý trường hợp lỗi
@@ -145,7 +152,8 @@ class PerformanceKaraokeBloc extends Bloc<PerformanceKaraokeEvent, PerformanceKa
 
     int newTotalHitMs = s.totalHitMs;
     final updatedHitDurations = Map<int, double>.from(s.hitDuration);
-
+    final updateHitMs = Map<int, int>.from(s.hitMs);
+    bool foundNote = false;
     // Binary search
     if (_latestPitch > 50) {
       final userMidi = 69.0 + 12.0 * (log(_latestPitch / 440.0) / ln2);
@@ -161,6 +169,11 @@ class PerformanceKaraokeBloc extends Bloc<PerformanceKaraokeEvent, PerformanceKa
           lo = mid + 1;
         } else {
           if ((userMidi - note.midiPitch).abs() <= 0.4) {
+            foundNote = true;
+            if (_lastHitNoteStartMs != note.startMs) {
+              updateHitMs[note.startMs] = currentTimeMs;
+              _lastHitNoteStartMs = note.startMs;
+            }
             newTotalHitMs += delta;
             updatedHitDurations[note.startMs] =
                 (updatedHitDurations[note.startMs] ?? 0.0) + delta;
@@ -169,26 +182,29 @@ class PerformanceKaraokeBloc extends Bloc<PerformanceKaraokeEvent, PerformanceKa
         }
       }
     }
-
+    if (!foundNote) {
+      _lastHitNoteStartMs = null;
+    }
     emit(
       s.copyWith(
         currentTimeMs: currentTimeMs,
         totalHitMs: newTotalHitMs,
         hitDuration: updatedHitDurations,
+        hitMs: updateHitMs
       ),
     );
   }
 
-  void _onPauseKaraoke(PauseKaraoke event, Emitter emit) {
+  Future<void> _onPauseKaraoke(PauseKaraoke event, Emitter emit) async {
     final s = state;
     if (s is LoadedKaraoke) {
+      emit(s.copyWith(isPlaying: false));
       karaokeAudioRepository.pause();
       _lastMs = s.currentTimeMs;
-      emit(s.copyWith(isPlaying: false));
     }
   }
 
-  void _onResumeKaraoke(ResumeKaraoke event, Emitter emit) {
+  Future<void> _onResumeKaraoke(ResumeKaraoke event, Emitter emit) async {
     final s = state;
     if (s is LoadedKaraoke) {
       karaokeAudioRepository.resume();

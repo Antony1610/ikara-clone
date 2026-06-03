@@ -134,14 +134,55 @@ class MyApp extends StatelessWidget {
         child: Builder(
           builder: (context) {
             final authBloc = context.read<AuthBloc>();
-            return MaterialApp.router(
-              debugShowCheckedModeBanner: false,
-              title: 'Ikara',
-              routerConfig: AppRouter.router(authBloc, initialLocation),
+            return AppLifecycleHandler(
+              child: MaterialApp.router(
+                debugShowCheckedModeBanner: false,
+                title: 'Ikara',
+                routerConfig: AppRouter.router(authBloc, initialLocation),
+              ),
             );
           }
         ),
       ),
     );
   }
+}
+
+
+class AppLifecycleHandler extends StatefulWidget {
+  final Widget child;
+  const AppLifecycleHandler({super.key, required this.child});
+
+  @override
+  State<AppLifecycleHandler> createState() => _AppLifecycleHandlerState();
+}
+
+class _AppLifecycleHandlerState extends State<AppLifecycleHandler>
+    with WidgetsBindingObserver {
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.paused) {
+      debugPrint("APP PAUSED");
+      context.read<KaraokeAudioService>().pause();
+    }
+    if (state == AppLifecycleState.resumed) {
+      context.read<KaraokeAudioService>().resume();
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) => widget.child;
 }

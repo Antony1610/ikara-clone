@@ -86,4 +86,5 @@ class AppColors {
   static const Color thirdBackgroundPractices = Color(0xFF6C12C2);
   static const Color fourBackgroundPractices = Color(0xFF5F0FAC);
   static const Color pracScoreColor = Color(0xFF26FFFF);
+  static const Color introOverlayColor = Color(0xFF2F1E73);
 }

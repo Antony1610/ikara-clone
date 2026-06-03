@@ -62,12 +62,10 @@ class _PerformanceKaraokeScreenState extends State<PerformanceKaraokeScreen> {
 
     _posSub = _audioRepo.positionStream.listen((pos) {
       bloc.add(UpdatePosition(pos.inMilliseconds));
-      _currentMsNotifier.value = pos.inMilliseconds;
     });
 
     _pitchSub = _audioRepo.pitchStream.listen((pitch) {
       bloc.add(UpdatePitch(pitch));
-      _userPitchNotifier.value = pitch;
     });
   }
 
@@ -193,8 +191,12 @@ class _PerformanceKaraokeScreenState extends State<PerformanceKaraokeScreen> {
           builder: (context) =>
               BlocListener<PerformanceKaraokeBloc, PerformanceKaraokeState>(
                 listener: (context, state) {
-                  if (state is LoadedKaraoke && _posSub == null) {
-                    _startListening(context);
+                  if (state is LoadedKaraoke) {
+                    if (_posSub == null) {
+                      _startListening(context);
+                    }
+                    _currentMsNotifier.value = state.currentTimeMs;
+                    _userPitchNotifier.value = state.userPitchHz;
                   }
                   if (state is CompletedKaraoke) {
                     _posSub?.cancel();
@@ -287,6 +289,7 @@ class _PerformanceKaraokeScreenState extends State<PerformanceKaraokeScreen> {
                     currentMs: _currentMsNotifier.value,
                     userPitchHz: _userPitchNotifier.value,
                     hitDurations: loadedState.hitDuration,
+                    hitMs: loadedState.hitMs,
                     minPitch: loadedState.minPitch,
                     maxPitch: loadedState.maxPitch,
                     pxPerms: 0.2,

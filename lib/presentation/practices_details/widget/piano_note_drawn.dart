@@ -278,7 +278,11 @@ class PianoPainter extends CustomPainter {
       );
 
       // Vẽ hit overlay
-      final isHit = userMidi > 0 && currentMs >= note.startMs && currentMs <= note.startMs + note.durationMs && (note.midiPitch - userMidi).abs() <= 0.4;
+      final isHit =
+          userMidi > 0 &&
+          currentMs >= note.startMs &&
+          currentMs <= note.startMs + note.durationMs &&
+          (note.midiPitch - userMidi).abs() <= 0.4;
       if (isHit) {
         final hitEndX = playheadX.clamp(startX + _minNoteWidth, safeEndX);
         canvas.drawRRect(

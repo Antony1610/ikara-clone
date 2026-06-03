@@ -6,5 +6,6 @@ abstract class KaraokeAudioRepository {
   Future<void> stop();
   Future<void> pause();
   Future<void> resume();
+  // Future<void> seekTo(Duration position);
   Future<void> dispose();
 }

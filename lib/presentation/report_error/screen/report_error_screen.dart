@@ -232,6 +232,7 @@ class _MultiSelectState extends State<_MultiSelect> {
             ),
           ),
           SizedBox(height: MediaQuery.of(context).padding.bottom),
+          const SizedBox(height: 20,)
         ],
       ),
     );

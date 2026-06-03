@@ -25,6 +25,7 @@ class LoadedKaraoke extends PerformanceKaraokeState {
   final int minPitch;
   final int maxPitch;
   final Map<int, double> hitDuration;
+  final Map<int, int> hitMs;
   final bool isPlaying;
   final int totalHitMs;
   final double userPitchHz;
@@ -37,6 +38,7 @@ class LoadedKaraoke extends PerformanceKaraokeState {
     required this.minPitch,
     required this.maxPitch,
     required this.hitDuration,
+    required this.hitMs,
     required this.isPlaying,
     required this.totalHitMs
   });
@@ -47,6 +49,7 @@ class LoadedKaraoke extends PerformanceKaraokeState {
     int? minPitch,
     int? maxPitch,
     Map<int, double>? hitDuration,
+    Map<int, int>? hitMs,
     bool? isPlaying,
     int? totalHitMs,
     int? currentTimeMs,
@@ -58,6 +61,7 @@ class LoadedKaraoke extends PerformanceKaraokeState {
       minPitch: minPitch ?? this.minPitch,
       maxPitch: maxPitch ?? this.maxPitch,
       hitDuration: hitDuration ?? this.hitDuration,
+      hitMs: hitMs ?? this.hitMs,
       isPlaying: isPlaying ?? this.isPlaying,
       totalHitMs: totalHitMs ?? this.totalHitMs,
       currentTimeMs: currentTimeMs ?? this.currentTimeMs,
@@ -72,6 +76,7 @@ class LoadedKaraoke extends PerformanceKaraokeState {
     minPitch,
     maxPitch,
     hitDuration,
+    hitMs,
     isPlaying,
     totalHitMs,
     currentTimeMs,

@@ -10,8 +10,7 @@ class KaraokeAudioRepositoryImpl implements KaraokeAudioRepository {
   Stream<double> get pitchStream => _karaokeService.pitchStream;
 
   @override
-  Stream<Duration> get positionStream =>
-      _karaokeService.positionStream;
+  Stream<Duration> get positionStream => _karaokeService.positionStream;
   @override
   Stream<void> get completeStream => _karaokeService.onCompleteStream;
 
@@ -26,6 +25,9 @@ class KaraokeAudioRepositoryImpl implements KaraokeAudioRepository {
 
   @override
   Future<void> resume() => _karaokeService.resume();
+
+  // @override
+  // Future<void> seekTo(Duration position) => _karaokeService.seekTo(position);
 
   @override
   Future<void> dispose() => _karaokeService.dispose();
