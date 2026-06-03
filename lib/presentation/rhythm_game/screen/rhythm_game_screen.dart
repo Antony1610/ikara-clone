@@ -192,7 +192,7 @@ class _RhythmGameScreenState extends State<RhythmGameScreen>
         }
         if (state is RhythmGameCompleted) {
           _ticker.stop();
-          context.go('/rhythm-result', extra: state.result);
+          context.pushReplacement('/rhythm-result', extra: state.result);
         }
       },
       child: BlocBuilder<RhythmGameBloc, RhythmGameState>(

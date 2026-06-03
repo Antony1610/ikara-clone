@@ -60,13 +60,14 @@ class _PerformanceKaraokeScreenState extends State<PerformanceKaraokeScreen> {
 
     final bloc = context.read<PerformanceKaraokeBloc>();
 
-    _posSub = _audioRepo.playbackProgressStream.listen((pos) {
-      bloc.add(UpdatePosition(pos));
-      _currentMsNotifier.value = pos;
+    _posSub = _audioRepo.positionStream.listen((pos) {
+      bloc.add(UpdatePosition(pos.inMilliseconds));
+      _currentMsNotifier.value = pos.inMilliseconds;
     });
 
     _pitchSub = _audioRepo.pitchStream.listen((pitch) {
       bloc.add(UpdatePitch(pitch));
+      _userPitchNotifier.value = pitch;
     });
   }
 
@@ -116,7 +117,7 @@ class _PerformanceKaraokeScreenState extends State<PerformanceKaraokeScreen> {
         DeviceOrientation.portraitUp,
         DeviceOrientation.portraitDown,
       ]);
-      context.go('/performanceDetail/${widget.id}');
+      context.pushReplacement('/performanceDetail/${widget.id}');
     }
   }
 
@@ -174,77 +175,89 @@ class _PerformanceKaraokeScreenState extends State<PerformanceKaraokeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return BlocProvider(
-      create: (ctx) => PerformanceKaraokeBloc(
-        repository: ctx.read<PerformanceRepository>(),
-        karaokeAudioRepository: ctx.read<KaraokeAudioRepository>(),
-      )..add(LoadPerformance(widget.id)),
-      child: Builder(
-        builder: (context) =>
-            BlocListener<PerformanceKaraokeBloc, PerformanceKaraokeState>(
-              listener: (context, state) {
-                if (state is LoadedKaraoke && _posSub == null) {
-                  _startListening(context);
-                }
-                if (state is CompletedKaraoke) {
-                  _posSub?.cancel();
-                  _pitchSub?.cancel();
-                  _posSub = null;
-                  _pitchSub = null;
-                  SystemChrome.setPreferredOrientations([
-                    DeviceOrientation.landscapeLeft,
-                    DeviceOrientation.landscapeRight,
-                  ]);
-                  context.go('/performance/${widget.id}/result', extra: {
-                    'score' : state.score
-                  });
-                }
-              },
-              child: Scaffold(
-                body: Container(
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: [
-                        AppColors.firstMainBackground,
-                        AppColors.secMainBackground,
-                      ],
-                      begin: Alignment.topCenter,
-                      end: Alignment.bottomCenter,
-                    ),
-                  ),
-                  child: Stack(
-                    children: [
-                      SafeArea(child: _body(context)),
-                      Positioned(
-                        top: 16,
-                        left: 20,
-                        child: SafeArea(child: _buildControl(context)),
+    return PopScope(
+      onPopInvokedWithResult: (didPop, result) {
+        if (didPop) {
+          SystemChrome.setPreferredOrientations([
+            DeviceOrientation.portraitUp,
+            DeviceOrientation.portraitDown,
+          ]);
+        }
+      },
+      child: BlocProvider(
+        create: (ctx) => PerformanceKaraokeBloc(
+          repository: ctx.read<PerformanceRepository>(),
+          karaokeAudioRepository: ctx.read<KaraokeAudioRepository>(),
+        )..add(LoadPerformance(widget.id)),
+        child: Builder(
+          builder: (context) =>
+              BlocListener<PerformanceKaraokeBloc, PerformanceKaraokeState>(
+                listener: (context, state) {
+                  if (state is LoadedKaraoke && _posSub == null) {
+                    _startListening(context);
+                  }
+                  if (state is CompletedKaraoke) {
+                    _posSub?.cancel();
+                    _pitchSub?.cancel();
+                    _posSub = null;
+                    _pitchSub = null;
+                    SystemChrome.setPreferredOrientations([
+                      DeviceOrientation.landscapeLeft,
+                      DeviceOrientation.landscapeRight,
+                    ]);
+                    context.pushReplacement(
+                      '/performance/${widget.id}/result',
+                      extra: {'score': state.score},
+                    );
+                  }
+                },
+                child: Scaffold(
+                  body: Container(
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [
+                          AppColors.firstMainBackground,
+                          AppColors.secMainBackground,
+                        ],
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
                       ),
-                    ],
+                    ),
+                    child: Stack(
+                      children: [
+                        SafeArea(child: _body(context)),
+                        Positioned(
+                          top: 16,
+                          left: 20,
+                          child: SafeArea(child: _buildControl(context)),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ),
-            ),
+        ),
       ),
     );
   }
 
   Widget _body(BuildContext context) {
     return BlocBuilder<PerformanceKaraokeBloc, PerformanceKaraokeState>(
-      buildWhen: (prev, curr) =>
-          curr is! LoadedKaraoke ||
-          prev is! LoadedKaraoke ||
-          prev.isPlaying != curr.isPlaying ||
-          prev.totalHitMs != curr.totalHitMs ||
-          prev.userPitchHz != curr.userPitchHz ||
-          prev.hitDuration != curr.hitDuration,
+      buildWhen: (prev, curr) {
+        if (prev.runtimeType != curr.runtimeType) return true;
+        if (prev is LoadedKaraoke && curr is LoadedKaraoke) {
+          return prev.isPlaying != curr.isPlaying ||
+              prev.userPitchHz != curr.userPitchHz ||
+              prev.hitDuration != curr.hitDuration;
+        }
+        return false;
+      },
       builder: (context, state) {
         if (state is LoadingKaraoke || state is InitialKaraoke) {
           return const Center(
             child: CircularProgressIndicator(color: Colors.blueAccent),
           );
         }
-
         if (state is ErrorKaraoke) {
           return Center(
             child: Text(
@@ -253,33 +266,40 @@ class _PerformanceKaraokeScreenState extends State<PerformanceKaraokeScreen> {
             ),
           );
         }
-
         if (state is! LoadedKaraoke) {
           return const Center(
             child: Text('No data', style: TextStyle(color: Colors.white)),
           );
         }
-
+        final loadedState = state;
         return Column(
           children: [
             Expanded(
               flex: 4,
-              child: AnimatedPianoGrid(
-                notes: state.song.notes,
-                currentMs: state.currentTimeMs,
-                userPitchHz: state.userPitchHz,
-                hitDurations: state.hitDuration,
-                minPitch: state.minPitch,
-                maxPitch: state.maxPitch,
-                pxPerms: 0.2,
-                isPlaying: state.isPlaying,
+              child: AnimatedBuilder(
+                animation: Listenable.merge([
+                  _currentMsNotifier,
+                  _userPitchNotifier,
+                ]),
+                builder: (context, _) {
+                  return AnimatedPianoGrid(
+                    notes: loadedState.song.notes,
+                    currentMs: _currentMsNotifier.value,
+                    userPitchHz: _userPitchNotifier.value,
+                    hitDurations: loadedState.hitDuration,
+                    minPitch: loadedState.minPitch,
+                    maxPitch: loadedState.maxPitch,
+                    pxPerms: 0.2,
+                    isPlaying: loadedState.isPlaying,
+                  );
+                },
               ),
             ),
             Expanded(
               flex: 2,
               child: RepaintBoundary(
                 child: KaraokeLyricsWidget(
-                  tokens: state.song.lyrics,
+                  tokens: loadedState.song.lyrics,
                   currentMsNotifier: _currentMsNotifier,
                 ),
               ),
@@ -358,17 +378,12 @@ class _PerformanceKaraokeScreenState extends State<PerformanceKaraokeScreen> {
   }
 
   void _pause(BuildContext context) {
-    _posSub?.cancel();
-    _pitchSub?.cancel();
-    _posSub = null;
-    _pitchSub = null;
     context.read<PerformanceKaraokeBloc>().add(PauseKaraoke());
     if (mounted) setState(() => isExpanded = true);
   }
 
   void _resume(BuildContext context) {
     context.read<PerformanceKaraokeBloc>().add(ResumeKaraoke());
-    _startListening(context);
     if (mounted) setState(() => isExpanded = false);
   }
 }

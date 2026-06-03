@@ -62,23 +62,18 @@ class AudioService {
     _streamSubscription = _pcmController!.stream.listen((buffer) {
       if (!_isRecording) return;
 
-      final left = <int>[];
-      final right = <int>[];
+      final mono = <int>[];
 
       for (final chunk in buffer) {
-        for (int i = 0; i < chunk.length; i += 2) {
-          if (i + 1 < chunk.length) {
-            left.add(chunk[i]);
-            right.add(chunk[i + 1]);
-          }
+        final stereoInt16 = chunk.buffer.asInt16List();
+        for (int i = 0; i + 1 < stereoInt16.length; i += 2) {
+          final leftSample = stereoInt16[i].abs();
+          final rightSample = stereoInt16[i + 1].abs();
+          final monoSample = ((leftSample + rightSample) / 2).round();
+          mono.add(monoSample);
         }
       }
-
-      final leftLevel = _calculate(left);
-      final rightLevel = _calculate(right);
-
-      final result = ((leftLevel + rightLevel) / 2).round();
-
+      final result = _calculate(mono);
       if (_resultController != null && !_resultController!.isClosed) {
         _resultController!.add(result);
       }

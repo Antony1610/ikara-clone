@@ -211,7 +211,7 @@ class _VideoSectionState extends State<_VideoSection> {
         child: ElevatedButton(
           onPressed: () {
             _pauseVideo?.call();
-            context.go('/karaoke/${widget.state.lesson.id}');
+            context.pushReplacement('/karaoke/${widget.state.lesson.id}');
           },
           style: ElevatedButton.styleFrom(
             backgroundColor: AppColors.progressColor,

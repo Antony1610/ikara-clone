@@ -144,7 +144,7 @@ class _RhythmResultView extends StatelessWidget {
                             text: 'Bài tập tiếp theo',
                             backgroundColor: AppColors.buttonInsideLesson,
                             textColor: Colors.white,
-                            onPressed: () => context.go('/rhythm/${state.result.nextId}'),
+                            onPressed: () => context.pushReplacement('/rhythm/${state.result.nextId}'),
                           ),
                           const SizedBox(height: 16),
                         ],
@@ -152,14 +152,14 @@ class _RhythmResultView extends StatelessWidget {
                           text: 'Thử lại',
                           backgroundColor: AppColors.tryAgainButton,
                           textColor: AppColors.primaryText,
-                          onPressed: () => context.go('/rhythm/${state.result.rhythmId}'),
+                          onPressed: () => context.pushReplacement('/rhythm/${state.result.rhythmId}'),
                         ),
                       ] else ...[
                         _buildButton(
                           text: 'Thử lại',
                           backgroundColor: AppColors.tryAgainButton,
                           textColor: Colors.white,
-                          onPressed: () => context.go('/rhythm/${state.result.rhythmId}'),
+                          onPressed: () => context.pushReplacement('/rhythm/${state.result.rhythmId}'),
                         ),
                       ],
 

@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:ikara_clone/constants/constants.dart';
 import 'package:ikara_clone/data/model/performances/lyrics_token.dart';
 
-class KaraokeLyricsWidget extends StatelessWidget {
+class KaraokeLyricsWidget extends StatefulWidget {
   final List<LyricsToken> tokens;
   final ValueNotifier<int> currentMsNotifier;
 
@@ -13,12 +13,53 @@ class KaraokeLyricsWidget extends StatelessWidget {
   });
 
   @override
+  State<KaraokeLyricsWidget> createState() => _KaraokeLyricsWidgetState();
+}
+
+class _KaraokeLyricsWidgetState extends State<KaraokeLyricsWidget> {
+
+  late final List<List<(int, LyricsToken)>> _lines;
+  final ValueNotifier<int> _activeIdxNotifier = ValueNotifier<int>(-1);
+  int _lastActiveIdx = -1;
+  @override
+  void initState() {
+    super.initState();
+    _lines = LyricsPaint._groupLine(widget.tokens);
+    widget.currentMsNotifier.addListener(_onTimeTick);
+  }
+
+  @override
+  void dispose() {
+    widget.currentMsNotifier.removeListener(_onTimeTick);
+    _activeIdxNotifier.dispose();
+    super.dispose();
+  }
+  void _onTimeTick() {
+    final ms = widget.currentMsNotifier.value;
+    int low = 0;
+    int high = widget.tokens.length-1;
+    int best = -1;
+    while (low <= high) {
+      int mid = (low + high) >> 1;
+      if (widget.tokens[mid].startMs <= ms) {
+        best = mid;
+        low = mid + 1;
+      } else {
+        high = mid - 1;
+      }
+    }
+    if (best != _lastActiveIdx) {
+      _lastActiveIdx = best;
+      _activeIdxNotifier.value = best;
+    }
+  }
+  @override
   Widget build(BuildContext context) {
     return ValueListenableBuilder<int>(
-      valueListenable: currentMsNotifier,
-      builder: (context, ms, _) {
+      valueListenable: _activeIdxNotifier,
+      builder: (context, activeIdx, _) {
         return CustomPaint(
-          painter: LyricsPaint(tokens: tokens, currentMs: ms),
+          painter: LyricsPaint(tokens: widget.tokens, activeIdx: activeIdx, lines: _lines),
           size: const Size(double.infinity, 200),
         );
       },
@@ -125,11 +166,10 @@ class KaraokeLyricsWidget extends StatelessWidget {
 
 class LyricsPaint extends CustomPainter {
   final List<LyricsToken> tokens;
-  final int currentMs;
+  final int activeIdx;
 
-  final List<List<(int, LyricsToken)>> _lines;
-  LyricsPaint({required this.tokens, required this.currentMs})
-    : _lines = _groupLine(tokens);
+  final List<List<(int, LyricsToken)>> lines;
+  LyricsPaint({required this.tokens, required this.activeIdx, required this.lines});
 
   static List<List<(int, LyricsToken)>> _groupLine(List<LyricsToken> tokens) {
     final list = <List<(int, LyricsToken)>>[];
@@ -168,21 +208,19 @@ class LyricsPaint extends CustomPainter {
   );
   @override
   void paint(Canvas canvas, Size size) {
-    int activeIdx = _findActiveIdx();
     int activeLine = _findActiveLine(activeIdx);
     double lineHeight = 35.0;
     double startY = (size.height / 2) - (lineHeight / 2);
     for (int i = activeLine; i <= activeLine + 1; i++) {
-      if (i >= _lines.length) {
+      if (i >= lines.length) {
         break;
       }
       double y = startY + ((i - activeLine) * lineHeight);
       if (y < -lineHeight || y > size.height) {
         continue;
       }
-      double x = 20.0;
       final spans = <InlineSpan>[];
-      final currentLine = _lines[i];
+      final currentLine = lines[i];
       for (final item in currentLine) {
         final tokenIdx = item.$1;
         final token = item.$2;
@@ -198,35 +236,20 @@ class LyricsPaint extends CustomPainter {
       final textSpan = TextSpan(children: spans);
       final tp = TextPainter(text: textSpan, textDirection: TextDirection.ltr);
       tp.layout();
-      x += (size.width - tp.width) / 2;
+      double x = (size.width - tp.width) / 2;
       tp.paint(canvas, Offset(x, y));
     }
   }
 
-  int _findActiveIdx() {
-    int low = 0;
-    int high = tokens.length - 1;
-    int best = -1;
-    while (low <= high) {
-      int mid = (low + high) >> 1;
-      if (tokens[mid].startMs <= currentMs) {
-        best = mid;
-        low = mid + 1;
-      } else {
-        high = mid - 1;
-      }
-    }
-    return best;
-  }
 
   int _findActiveLine(int activeIdx) {
     if (activeIdx == -1) return 0;
     int low = 0;
-    int high = _lines.length - 1;
+    int high = lines.length - 1;
     int best = -1;
     while (low <= high) {
       int mid = (low + high) >> 1;
-      if (_lines[mid].first.$1 <= activeIdx) {
+      if (lines[mid].first.$1 <= activeIdx) {
         best = mid;
         low = mid + 1;
       } else {
@@ -238,5 +261,5 @@ class LyricsPaint extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant LyricsPaint oldDelegate) =>
-      oldDelegate.currentMs != currentMs;
+      oldDelegate.tokens != tokens || oldDelegate.activeIdx != activeIdx;
 }

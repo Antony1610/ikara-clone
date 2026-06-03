@@ -9,23 +9,24 @@ class KaraokeAudioService {
   final FlutterSoundRecorder _recorder = FlutterSoundRecorder();
   final FlutterSoundPlayer _player = FlutterSoundPlayer();
 
+  final _positionController = StreamController<Duration>.broadcast();
   final _pitchController = StreamController<double>.broadcast();
-  final _playbackProgressController = StreamController<int>.broadcast();
-
+  Stream<Duration> get positionStream => _positionController.stream;
   final _pitchDetector = PitchDetectorService();
-  late StreamController<Uint8List> _audioController;
+  StreamController<Uint8List>? _audioController;
   StreamSubscription? _subscription;
+  StreamSubscription? _positionSub;
 
   Stream<double> get pitchStream => _pitchController.stream;
-  Stream<int> get playbackProgressStream => _playbackProgressController.stream;
   final _completeController = StreamController<void>.broadcast();
   Stream<void> get onCompleteStream => _completeController.stream;
-  final List<int> _sampleAccumulator = [];
   static const int _requiredSamples = 1024;
   static const int _requiredBytes = _requiredSamples * 2;
   bool _isRecording = false;
   bool _isProcessing = false;
-
+  bool _isPaused = false;
+  final Uint8List _frameBuffer = Uint8List(_requiredBytes);
+  int _bufferOffset = 0;
   Future<bool> _requestMicPermission() async {
     final status = await Permission.microphone.request();
     return status.isGranted;
@@ -45,51 +46,61 @@ class KaraokeAudioService {
 
     await _player.openPlayer();
     await _player.setSubscriptionDuration(const Duration(milliseconds: 50));
-    _player.onProgress?.listen((event) {
-      _playbackProgressController.add(event.position.inMilliseconds);
+    _positionSub = _player.onProgress!.listen((event) {
+      if (_isPaused) return;
+      if (!_positionController.isClosed) {
+        _positionController.add(event.position);
+      }
     });
 
     await _player.startPlayer(
       codec: Codec.mp3,
       fromURI: audioUrl,
-      whenFinished:  _onPlaybackFinished,
+      whenFinished: _onPlaybackFinished,
     );
 
     await _recorder.openRecorder();
     _audioController = StreamController<Uint8List>();
-    _subscription = _audioController.stream.listen(_onAudioData);
+    _subscription = _audioController?.stream.listen(_onAudioData);
     _isRecording = true;
 
     await _recorder.startRecorder(
       codec: Codec.pcm16,
       sampleRate: 44100,
       numChannels: 2,
-      toStream: _audioController.sink,
+      toStream: _audioController?.sink,
     );
   }
 
   void _onAudioData(Uint8List buffer) {
     if (!_isRecording || _isProcessing) return;
-    final monoBuffer = _stereoToMono(buffer);
+    if (_isPaused) return;
+    final mono = _stereoToMono(buffer);
+    int i = 0;
+    while (i < mono.length) {
+      final remaining = _requiredBytes - _bufferOffset;
+      final toCopy = (mono.length - i < remaining)
+          ? mono.length - i
+          : remaining;
 
-    _sampleAccumulator.addAll(monoBuffer);
-    while (_sampleAccumulator.length >= _requiredBytes) {
-      final frame = Uint8List.fromList(
-        _sampleAccumulator.sublist(0, _requiredBytes),
-      );
-      _sampleAccumulator.removeRange(0, _requiredBytes);
+      _frameBuffer.setRange(_bufferOffset, _bufferOffset + toCopy, mono, i);
 
-      _isProcessing = true;
-      _pitchDetector
-          .getPitch(frame)
-          .then((pitch) {
-            if (pitch > 0 && !_pitchController.isClosed) {
-              _pitchController.add(pitch);
-            }
-          })
-          .whenComplete(() => _isProcessing = false);
+      _bufferOffset += toCopy;
+      i += toCopy;
 
-      break;
+      if (_bufferOffset == _requiredBytes) {
+        _bufferOffset = 0;
+
+        _isProcessing = true;
+        _pitchDetector
+            .getPitch(_frameBuffer)
+            .then((pitch) {
+              if (pitch > 0 && !_pitchController.isClosed) {
+                _pitchController.add(pitch);
+              }
+            })
+            .whenComplete(() => _isProcessing = false);
+      }
     }
   }
 
@@ -102,30 +113,48 @@ class KaraokeAudioService {
 
   Future<void> stop() async {
     _isRecording = false;
-    _sampleAccumulator.clear();
-
+    _isProcessing = false;
+    _isPaused = false;
     await _pitchDetector.dispose();
-    if (_recorder.isRecording) await _recorder.stopRecorder();
+    if (_recorder.isRecording || _recorder.isPaused) {
+      await _recorder.stopRecorder();
+    }
     await _recorder.closeRecorder();
+    if (_audioController != null && !_audioController!.isClosed) {
+      await _audioController!.close();
+      _audioController = null;
+    }
+    await _positionSub?.cancel();
+    await _subscription?.cancel();
     if (_player.isPlaying || _player.isPaused) await _player.stopPlayer();
     await _player.closePlayer();
-
-    await _subscription?.cancel();
-    await _audioController.close();
   }
 
   Future<void> pause() async {
-    if (_player.isPlaying) await _player.pausePlayer();
+    if (_player.isPlaying) {
+      _isPaused = true;
+      await _player.pausePlayer();
+      if (_recorder.isRecording) {
+        await _recorder.pauseRecorder();
+      }
+      _bufferOffset = 0;
+    }
   }
 
   Future<void> resume() async {
-    if (_player.isPaused) await _player.resumePlayer();
+    if (_player.isPaused) {
+      await _player.resumePlayer();
+      if (_recorder.isPaused) {
+        await _recorder.resumeRecorder();
+      }
+      _isPaused = false;
+    }
   }
 
   Future<void> dispose() async {
     await stop();
     _pitchController.close();
-    _playbackProgressController.close();
+    _positionController.close();
     _completeController.close();
   }
 

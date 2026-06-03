@@ -219,7 +219,7 @@ class _StartButton extends StatelessWidget {
       height: 44,
       child: ElevatedButton(
         onPressed: () {
-          context.go('/breathingDetail/${part.partId}');
+          context.push('/breathingDetail/${part.partId}');
         },
         style: ElevatedButton.styleFrom(
           backgroundColor: AppColors.buttonInsideLesson,

@@ -114,9 +114,29 @@ class BreathingLessonDetailBloc
     final currentState = state as DetailLoaded;
 
     if (event.isCompleted) {
+      final parts = await _repository.getParts();
+      final currentIndex = parts.indexWhere(
+            (p) => p.partId == currentState.breathsPart.partId,
+      );
+      final nextId = (currentIndex != -1 && currentIndex + 1 < parts.length)
+          ? parts[currentIndex + 1].partId
+          : null;
+
+      final result = BreathsResult(
+        partId: currentState.breathsPart.partId,
+        nextId: nextId,
+        score: currentState.score,
+        target: currentState.breathsPart.duration,
+        actual: Duration(seconds: currentState.elapsedSeconds.toInt()),
+        diff: (currentState.breathsPart.duration - Duration(seconds: currentState.elapsedSeconds.toInt())).abs(),
+        avgAmplitude: 0,
+        peakAmplitude: 0,
+        stability: 0,
+      );
       emit(
         DetailCompleted(
           id: currentState.breathsPart.partId,
+          result: result,
           score: currentState.score,
           type: currentState.breathsPart.type,
           duration: currentState.targetDuration,

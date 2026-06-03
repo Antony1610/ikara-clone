@@ -35,7 +35,7 @@ class _PracticesDetailsScreenState extends State<PracticesDetailsScreen> {
           body: BlocListener<PracticesDetailsBloc, PracticesDetailsState>(
             listener: (context, state){
               if (state is FinishedPractices) {
-                context.go('/practices/${widget.id}/result', extra:{
+                context.pushReplacement('/practices/${widget.id}/result', extra:{
                   'score' : state.score,
                   'practices' : state.practicesPart,
                   'status' : state.status

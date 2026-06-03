@@ -1,15 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:ikara_clone/constants/constants.dart';
+import 'package:ikara_clone/data/model/model.dart';
 
 class BreathingLessonResultScreen extends StatelessWidget {
   final String id;
+  final BreathsResult result;
   final int score;
   final String type;
   final double duration;
   const BreathingLessonResultScreen({
     super.key,
     required this.id,
+    required this.result,
     required this.score,
     required this.type,
     required this.duration,
@@ -144,7 +147,7 @@ class BreathingLessonResultScreen extends StatelessWidget {
                       ),
                       elevation: 2,
                     ),
-                    onPressed: () => context.pop(),
+                    onPressed: () => context.pushReplacement('/breathingDetail/${result.nextId}'),
                     child: Text(
                       'Bài tập tiếp theo',
                       style: TextStyle(fontFamily: 'Roboto',
@@ -169,7 +172,7 @@ class BreathingLessonResultScreen extends StatelessWidget {
                       borderRadius: BorderRadius.circular(5),
                     ),
                   ),
-                  onPressed: () => context.go('/breathingDetail/$id'),
+                  onPressed: () => context.pushReplacement('/breathingDetail/$id'),
                   child: Text(
                     'Thử lại',
                     style: TextStyle(fontFamily: 'Roboto',

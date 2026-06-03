@@ -146,10 +146,11 @@ class _LessonDetailViewState extends State<_LessonDetailView> {
         if (state is DetailCompleted) {
           WidgetsBinding.instance.addPostFrameCallback((_) {
             if (!mounted) return;
-            context.go(
+            context.pushReplacement(
               '/breathing-result',
               extra: {
                 'id': state.id,
+                'result' : state.result,
                 'score': state.score,
                 'type': state.type,
                 'duration': state.duration,

@@ -63,17 +63,19 @@ class DetailLoaded extends BreathingLessonDetailState {
 
 class DetailCompleted extends BreathingLessonDetailState {
   final String id;
+  final BreathsResult result;
   final int score;
   final String type;
   final double duration;
 
   const DetailCompleted({
     required this.id,
+    required this.result,
     required this.score,
     required this.type,
     required this.duration,
   });
 
   @override
-  List<Object> get props => [id, score, type, duration];
+  List<Object> get props => [id, result, score, type, duration];
 }

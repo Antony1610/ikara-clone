@@ -1,6 +1,6 @@
 class BreathsResult {
   final String partId;
-
+  final String? nextId;
   final Duration target;
   final Duration actual;
   final Duration diff;
@@ -13,6 +13,7 @@ class BreathsResult {
 
   BreathsResult({
     required this.partId,
+    this.nextId,
     required this.target,
     required this.actual,
     required this.diff,

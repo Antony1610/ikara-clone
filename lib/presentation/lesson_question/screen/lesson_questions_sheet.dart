@@ -101,7 +101,7 @@ class _LessonQuestionsSheetState extends State<LessonQuestionsSheet> {
             state.isCompleted &&
             state.lessonResult != null) {
           Navigator.of(context).pop();
-          context.go('/lesson-result', extra: state.lessonResult);
+          context.pushReplacement('/lesson-result', extra: state.lessonResult);
         }
       },
       builder: (context, state) {

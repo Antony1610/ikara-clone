@@ -10,8 +10,8 @@ class KaraokeAudioRepositoryImpl implements KaraokeAudioRepository {
   Stream<double> get pitchStream => _karaokeService.pitchStream;
 
   @override
-  Stream<int> get playbackProgressStream =>
-      _karaokeService.playbackProgressStream;
+  Stream<Duration> get positionStream =>
+      _karaokeService.positionStream;
   @override
   Stream<void> get completeStream => _karaokeService.onCompleteStream;
 

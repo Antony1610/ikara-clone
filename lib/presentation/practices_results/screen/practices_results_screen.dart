@@ -148,7 +148,7 @@ class _ResultScreen extends StatelessWidget {
                           text: 'Bắt đầu lại',
                           borderColor: AppColors.buttonInsideLesson,
                           textColor: AppColors.primaryText,
-                          onPressed: () => context.go(
+                          onPressed: () => context.pushReplacement(
                             '/practices/${state.practicesPart.indexId}',
                           ),
                         ),

@@ -90,6 +90,7 @@ class _AnimatedPianoGridState extends State<AnimatedPianoGrid>
     if (old.isPlaying != widget.isPlaying) {
       if (widget.isPlaying) {
         _baseMs = widget.currentMs;
+        _controller.reset();
         _baseElapsed = _controller.lastElapsedDuration ?? Duration.zero;
         _controller.forward();
       } else {
@@ -104,6 +105,7 @@ class _AnimatedPianoGridState extends State<AnimatedPianoGrid>
       ..removeListener(_onTick)
       ..dispose();
     _smoothMsNotifier.dispose();
+    _userPitchNotifier.dispose();
     _hitDurationNotifier.dispose();
     super.dispose();
   }
@@ -231,7 +233,6 @@ class PianoGridPainter extends CustomPainter {
         final hitStartX = (rawStartX + hitStart * pxPerms).clamp(startX, endX);
         double hitEndX = (rawStartX + playedMs * pxPerms).clamp(startX, endX);
         if (hitEndX < hitStartX) hitEndX = hitStartX + 0.1;
-        if (hitEndX > endX) hitEndX = endX;
 
         if (hitEndX > -_strokeRadius &&
             hitStartX < size.width + _strokeRadius) {

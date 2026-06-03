@@ -23,10 +23,10 @@ class PracticesAudioService {
   StreamSubscription? _audioSubscription;
   Stream<Duration>? _positionBroadcast;
 
-  final List<int> _sampleAccumulator = [];
   static const int _requiredSamples = 1024;
   static const int _requiredBytes = _requiredSamples * 2;
-
+  final Uint8List _frameBuffer = Uint8List(_requiredBytes);
+  int _bufferOffset = 0;
   bool _isRecording = false;
   bool _isProcessing = false;
   String? _loadedFilePath;
@@ -102,8 +102,6 @@ class PracticesAudioService {
   Future<void> stop() async {
     _isRecording = false;
     _isProcessing = false;
-    _sampleAccumulator.clear();
-
     await _pitchDetector.dispose();
 
     if (_recorder.isRecording || _recorder.isPaused) {
@@ -138,7 +136,6 @@ class PracticesAudioService {
   }
 
   Uint8List _stereoToMono(Uint8List stereoBytes) {
-
     final aligned = Uint8List.fromList(stereoBytes);
     final stereoInt16 = aligned.buffer.asInt16List();
 
@@ -146,7 +143,7 @@ class PracticesAudioService {
     final monoInt16 = Int16List(monoLength);
 
     for (int i = 0; i < stereoInt16.length - 1; i += 2) {
-      final left  = stereoInt16[i];
+      final left = stereoInt16[i];
       final right = stereoInt16[i + 1];
       monoInt16[i ~/ 2] = (left + right) >> 1;
     }
@@ -156,24 +153,33 @@ class PracticesAudioService {
 
   void _onAudioData(Uint8List buffer) {
     if (!_isRecording || _isProcessing) return;
+    if (_player.isPaused) return;
+    final mono = _stereoToMono(buffer);
+    int i = 0;
+    while (i < mono.length) {
+      final remaining = _requiredBytes - _bufferOffset;
+      final toCopy = (mono.length - i < remaining)
+          ? mono.length - i
+          : remaining;
 
-    final monoBuffer = _stereoToMono(buffer);
-    _sampleAccumulator.addAll(monoBuffer);
+      _frameBuffer.setRange(_bufferOffset, _bufferOffset + toCopy, mono, i);
 
-    while (_sampleAccumulator.length >= _requiredBytes) {
-      final frame = Uint8List.fromList(
-        _sampleAccumulator.sublist(0, _requiredBytes),
-      );
-      _sampleAccumulator.removeRange(0, _requiredBytes);
+      _bufferOffset += toCopy;
+      i += toCopy;
 
-      _isProcessing = true;
-      _pitchDetector.getPitch(frame).then((pitch) {
-        if (pitch > 0 && !_pitchController.isClosed) {
-          _pitchController.add(pitch);
-        }
-      }).whenComplete(() => _isProcessing = false);
+      if (_bufferOffset == _requiredBytes) {
+        _bufferOffset = 0;
 
-      break;
+        _isProcessing = true;
+        _pitchDetector
+            .getPitch(_frameBuffer)
+            .then((pitch) {
+              if (pitch > 0 && !_pitchController.isClosed) {
+                _pitchController.add(pitch);
+              }
+            })
+            .whenComplete(() => _isProcessing = false);
+      }
     }
   }
 }

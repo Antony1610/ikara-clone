@@ -86,23 +86,6 @@ class _ResultScreen extends StatelessWidget {
                         ),
                       ),
                       const SizedBox(height: 20),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: List.generate(3, (index) {
-                          bool isEarned = index < state.stars;
-                          return Padding(
-                            padding: EdgeInsets.symmetric(horizontal: 8.0),
-                            child: Icon(
-                              Icons.star,
-                              size: 36,
-                              color: isEarned
-                                  ? AppColors.pracStarColor
-                                  : AppColors.lockText,
-                            ),
-                          );
-                        }),
-                      ),
-                      const SizedBox(height: 50),
                       Container(
                         height: 160,
                         width: 160,

@@ -49,20 +49,20 @@ class PerformanceKaraokeBloc extends Bloc<PerformanceKaraokeEvent, PerformanceKa
       final pitches = song.notes.map((n) => n.midiPitch);
       final minPitch = pitches.reduce(min) - 2;
       final maxPitch = pitches.reduce(max) + 2;
+      await karaokeAudioRepository.start(lesson.karaokeLink);
 
       emit(LoadedKaraoke(
-        lesson: lesson,
-        song: song,
-        minPitch: minPitch,
-        maxPitch: maxPitch,
-        hitDuration: const {},
-        isPlaying: true,
-        totalHitMs: 0,
-        currentTimeMs: 0,
-        userPitchHz: 0.0
+          lesson: lesson,
+          song: song,
+          minPitch: minPitch,
+          maxPitch: maxPitch,
+          hitDuration: const {},
+          isPlaying: true,
+          totalHitMs: 0,
+          currentTimeMs: 0,
+          userPitchHz: 0.0
       ));
 
-      await karaokeAudioRepository.start(lesson.karaokeLink);
     } catch (e) {
       emit(ErrorKaraoke(e.toString()));
     }
@@ -180,16 +180,20 @@ class PerformanceKaraokeBloc extends Bloc<PerformanceKaraokeEvent, PerformanceKa
   }
 
   void _onPauseKaraoke(PauseKaraoke event, Emitter emit) {
-    if (state is LoadedKaraoke) {
+    final s = state;
+    if (s is LoadedKaraoke) {
       karaokeAudioRepository.pause();
-      emit((state as LoadedKaraoke).copyWith(isPlaying: false));
+      _lastMs = s.currentTimeMs;
+      emit(s.copyWith(isPlaying: false));
     }
   }
 
   void _onResumeKaraoke(ResumeKaraoke event, Emitter emit) {
-    if (state is LoadedKaraoke) {
+    final s = state;
+    if (s is LoadedKaraoke) {
       karaokeAudioRepository.resume();
-      emit((state as LoadedKaraoke).copyWith(isPlaying: true));
+      _lastMs = s.currentTimeMs;
+      emit(s.copyWith(isPlaying: true));
     }
   }
 

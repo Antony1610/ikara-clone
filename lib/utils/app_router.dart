@@ -245,6 +245,7 @@ class AppRouter {
             key: state.pageKey,
             child: BreathingLessonResultScreen(
               id: data['id'] as String,
+              result: data['result'] as BreathsResult,
               score: (data['score'] as num).toInt(),
               type: data['type'] as String,
               duration: data['duration'],
@@ -356,7 +357,6 @@ class AppRouter {
         path: '/policy-detail',
         pageBuilder: (context, state) {
           final args = state.extra as Map<String, dynamic>;
-
           return CustomTransitionPage(
             key: state.pageKey,
             child: PolicyDetailScreen(
