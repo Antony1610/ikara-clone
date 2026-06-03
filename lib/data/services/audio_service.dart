@@ -28,7 +28,7 @@ class AudioService {
     if (!granted) throw Exception("Microphone permission denied");
 
     await _recorder.openRecorder();
-    await _recorder.setSubscriptionDuration(const Duration(milliseconds: 20));
+    await _recorder.setSubscriptionDuration(const Duration(milliseconds: 50));
 
     _isInitialized = true;
   }
@@ -65,13 +65,12 @@ class AudioService {
       final mono = <int>[];
 
       for (final chunk in buffer) {
-        final stereoInt16 = chunk.buffer.asInt16List();
-        for (int i = 0; i + 1 < stereoInt16.length; i += 2) {
-          final leftSample = stereoInt16[i].abs();
-          final rightSample = stereoInt16[i + 1].abs();
-          final monoSample = ((leftSample + rightSample) / 2).round();
-          mono.add(monoSample);
-        }
+        final int16 = Int16List.view(
+          chunk.buffer,
+          chunk.offsetInBytes,
+          chunk.lengthInBytes ~/ 2,
+        );
+        mono.addAll(int16);
       }
       final result = _calculate(mono);
       if (_resultController != null && !_resultController!.isClosed) {
