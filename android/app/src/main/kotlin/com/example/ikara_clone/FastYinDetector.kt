@@ -4,36 +4,54 @@ import kotlin.math.PI
 import kotlin.math.cos
 import kotlin.math.sin
 
+/**
+ * Bộ phát hiện cao độ âm thanh (pitch detection) dựa trên thuật toán YIN kết hợp với FFT để tăng tốc độ,
+ *
+ * @param sampleRate  Tốc độ lấy mẫu (Hz), mặc định 44100
+ * @param bufferSize  Kích thước buffer đầu vào, mặc định 1024
+ * @param threshold   Ngưỡng xác định có cao độ hay không, mặc định 0.15
+ */
 class FastYinDetector(
     private val sampleRate: Float = 44100f,
     private val bufferSize: Int = 1024,
     private val threshold: Double = 0.15
 ) {
-    private val halfSize = bufferSize / 2          // 512
-    private val fftSize  = bufferSize * 2          // 2048 (zero-padded)
+    private val halfSize = bufferSize / 2
+    private val fftSize  = bufferSize * 2
 
     private val yinBuffer = FloatArray(halfSize)
-    private val audioBufferFFT = FloatArray(fftSize * 2) // 4096: complex interleaved
-    private val kernelFFT = FloatArray(fftSize * 2) // 4096
-    private val yinStyleACF = FloatArray(fftSize * 2) // 4096
+
+
+    // Buffer FFT Tín hiệu âm thanh
+    private val audioBufferFFT = FloatArray(fftSize * 2)
+
+    // Buffer FFT Tín hiệu audio đảo ngược (dùng để tính tương quan chéo)
+    private val kernelFFT = FloatArray(fftSize * 2)
+
+    //Buffer FFT lưu tích phức (audioBufferFFT * kernelFFT) trước khi IFFT.
+    private val yinStyleACF = FloatArray(fftSize * 2)
+
+    // Tổng năng lượng của cửa sổ tín hiệu tại vị trí tau (powerTerm[tau]).
     private val powerTerm = FloatArray(halfSize)
 
     private var probability = 0f
     private var isPitched = false
 
-    // Table size = fftSize/2 = 1024
-    // angle = -2*PI*i/fftSize, i từ 0..fftSize/2-1
     private val cosTable = FloatArray(fftSize / 2)
     private val sinTable = FloatArray(fftSize / 2)
 
     init {
         for (i in 0 until fftSize / 2) {
-            val angle = -2.0 * PI * i / fftSize  // dấu âm = forward FFT convention
+            val angle = -2.0 * PI * i / fftSize
             cosTable[i] = cos(angle).toFloat()
             sinTable[i] = sin(angle).toFloat()
         }
     }
 
+    /**
+     * Tính cao độ (tần số cơ bản) của buffer âm thanh đầu vào.
+     * @return Tần số (Hz) nếu phát hiện được cao độ, hoặc -1f nếu không có.
+     */
     fun getPitch(audioBuffer: FloatArray): Float {
         difference(audioBuffer)
         cumulativeMeanNormalizedDifference()
@@ -42,8 +60,10 @@ class FastYinDetector(
         return sampleRate / parabolicInterpolation(tau)
     }
 
+    /**
+     * Tính hàm hiệu bình phương (SDF) dùng FFT để tăng tốc,
+     */
     private fun difference(audioBuffer: FloatArray) {
-        // Power term
         powerTerm[0] = 0f
         for (i in 0 until halfSize) {
             powerTerm[0] += audioBuffer[i] * audioBuffer[i]
@@ -54,21 +74,18 @@ class FastYinDetector(
                     audioBuffer[tau + halfSize] * audioBuffer[tau + halfSize]
         }
 
-        // Audio FFT: bufferSize samples + zero-pad đến fftSize
         audioBufferFFT.fill(0f)
         for (j in 0 until bufferSize) {
             audioBufferFFT[2 * j] = audioBuffer[j]
         }
         fft(audioBufferFFT, false)
 
-        // Kernel: reversed halfSize + zero-pad đến fftSize
         kernelFFT.fill(0f)
         for (j in 0 until halfSize) {
             kernelFFT[2 * j] = audioBuffer[halfSize - 1 - j]
         }
         fft(kernelFFT, false)
 
-        // Multiply trong frequency domain
         for (j in 0 until fftSize) {
             val re = audioBufferFFT[2*j] * kernelFFT[2*j] -
                     audioBufferFFT[2*j+1] * kernelFFT[2*j+1]
@@ -78,16 +95,19 @@ class FastYinDetector(
             yinStyleACF[2*j+1] = im
         }
 
-        // Inverse FFT
+        // Đưa dữ liệu từ miền tần số về miền thời gian
         fft(yinStyleACF, true)
 
-        // YIN difference
         for (j in 0 until halfSize) {
             yinBuffer[j] = powerTerm[0] + powerTerm[j] -
                     2f * yinStyleACF[2 * (halfSize - 1 + j)]
         }
     }
 
+    /**
+     * Chuẩn hóa SDF bằng trung bình tích lũy (CMND) để loại bỏ
+     * thiên lệch vì d(tau) thô thường có xu hướng nhỏ ở tau nhỏ. Dễ nhận sai cao độ.
+     */
     private fun cumulativeMeanNormalizedDifference() {
         yinBuffer[0] = 1f
         var runningSum = 0f
@@ -97,6 +117,11 @@ class FastYinDetector(
         }
     }
 
+    /**
+     * Tìm tau tối ưu bằng cách duyệt đến điểm đầu tiên có giá trị
+     * CMND dưới ngưỡng, rồi lấy cực tiểu cục bộ trong vùng đó.
+     * @return Tau tìm được, hoặc -1 nếu không có cao độ.
+     */
     private fun absoluteThreshold(): Int {
         var tau = 2
         while (tau < halfSize) {
@@ -115,6 +140,10 @@ class FastYinDetector(
         return -1
     }
 
+    /**
+     * Tinh chỉnh tau về mức sub-sample bằng nội suy parabol
+     * dùng 3 điểm lân cận, giúp tăng độ chính xác tần số.
+     */
     private fun parabolicInterpolation(tauEstimate: Int): Float {
         val x0 = if (tauEstimate < 1) tauEstimate else tauEstimate - 1
         val x2 = if (tauEstimate + 1 < halfSize) tauEstimate + 1 else tauEstimate
@@ -136,12 +165,16 @@ class FastYinDetector(
         }
     }
 
-
-    // Cooley-Tukey FFT
+    /**
+     * FFT Cooley-Tukey in-place trên mảng số phức dạng interleaved.
+     * Hỗ trợ cả forward FFT và inverse FFT.
+     * @param data   Mảng [re0, im0, re1, im1, ...] sẽ bị biến đổi in-place.
+     * @param invert true = Inverse FFT; false = Forward FFT.
+     */
     private fun fft(data: FloatArray, invert: Boolean) {
-        val n = data.size / 2  // số complex samples
+        val n = data.size / 2
 
-        // Bit-reversal
+        // bit - reverse
         var j = 0
         for (i in 1 until n) {
             var bit = n shr 1
@@ -157,11 +190,10 @@ class FastYinDetector(
             }
         }
 
-        // Butterfly với precomputed table
         var len = 2
         while (len <= n) {
             val halfLen = len / 2
-            val step = fftSize / len  // step trong table
+            val step = fftSize / len
 
             for (i in 0 until n step len) {
                 for (k in 0 until halfLen) {
@@ -183,7 +215,7 @@ class FastYinDetector(
                     data[vIdx+1] = uIm - vIm
                 }
             }
-            len = len shl 1
+            len = len shl 1 // dịch sang trái 1 bit
         }
 
         if (invert) {

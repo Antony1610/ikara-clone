@@ -167,7 +167,7 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
                 GestureDetector(
                   behavior: HitTestBehavior.translucent,
                   onTap: _showControlsTemporarily,
-                  child: AspectRatio(
+                  child: AspectRatio( // ti le chieu rong va chieu cao
                     aspectRatio: _controller.value.aspectRatio,
                     child: Stack(
                       alignment: Alignment.bottomCenter,

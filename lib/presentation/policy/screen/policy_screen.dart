@@ -29,7 +29,7 @@ class PolicyScreen extends StatelessWidget {
       appBar: AppBar(
         elevation: 0,
         leading: IconButton(
-          onPressed: () => context.go('/setting'),
+          onPressed: () => context.pop(),
           icon: Icon(Icons.arrow_back_ios, color: AppColors.whiteBackground),
         ),
         title: Text(

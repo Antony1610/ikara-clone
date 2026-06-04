@@ -25,9 +25,9 @@ class MidiReader {
   int pos = 0;
   MidiReader(this.buf);
 
-  int readByte() => buf[pos++] & 0xFF;
-  int readUShort() => (readByte() << 8) | readByte();
-  int readUInt() => (readUShort() << 16) | readUShort();
+  int readByte() => buf[pos++] & 0xFF; // 1 byte
+  int readUShort() => (readByte() << 8) | readByte(); // 2 bytes
+  int readUInt() => (readUShort() << 16) | readUShort(); // 4 bytes
 
   int readVarLen() {
     int value = 0;
